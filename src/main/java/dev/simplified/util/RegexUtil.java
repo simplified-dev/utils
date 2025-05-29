@@ -30,17 +30,6 @@ public final class RegexUtil {
     private static final Pattern REPLACE_PATTERN = Pattern.compile("&&(?=" + ALL_PATTERN + ")");
     public static final Pattern VANILLA_PATTERN = Pattern.compile(SECTOR_SYMBOL + "+(" + ALL_PATTERN + ")");
 
-    // SkyBlock
-    public static final Pattern SERVER_REGEX = Pattern.compile("([0-9]{2}/[0-9]{2}/[0-9]{2}) (m(?:ini|ega)?[0-9]{1,3}[A-Za-z])");
-    public static final Pattern API_KEY_REGEX = Pattern.compile("§aYour new API key is §r§b" + StringUtil.UUID_REGEX.pattern() + "§r");
-    public static final Pattern TELEPORT_REGEX = Pattern.compile("§aWarped from the §r(.*?)§r§a to the §r(.*?)§r§a!§r");
-    public static final Pattern MANA_REGEX = Pattern.compile("§aUsed §r§6(.*?)§r§a! §r§b\\(([\\d]+) Mana\\)§r");
-
-    // Other
-    public static final Pattern URL_PATTERN = Pattern.compile("((?:https?://)?[\\w._-]{2,})\\.([a-z]{2,6}(?:/\\S+)?)");
-    public static final Pattern NUMBERS_SLASHES = Pattern.compile("[^0-9 /]");
-    public static final Pattern LETTERS_NUMBERS = Pattern.compile("[^a-z A-Z:0-9/']");
-
     // https://regex101.com/r/RFixIy/1
     //public static final transient Pattern LOG_PATTERN = Pattern.compile("\\{(\\{[\\d]+(?:,[^,}]+)*})}");
     //public static final transient Pattern LOG_PATTERN2 = Pattern.compile("(?!.*\\{[^}]*$)\\{\\K(?:\\{[^}]*\\}|[^{}]*)+");
