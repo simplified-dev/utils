@@ -1,8 +1,7 @@
 package dev.sbs.api.util;
 
-import lombok.AccessLevel;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.experimental.UtilityClass;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collections;
@@ -15,7 +14,7 @@ import java.util.Map;
  * types.
  */
 @SuppressWarnings("all")
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
+@UtilityClass
 public final class PrimitiveUtil {
 
     /**

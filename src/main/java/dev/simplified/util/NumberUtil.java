@@ -1,8 +1,7 @@
 package dev.sbs.api.util;
 
 import dev.sbs.api.reflection.Reflection;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
+import lombok.experimental.UtilityClass;
 
 import java.lang.reflect.Array;
 import java.math.BigDecimal;
@@ -17,7 +16,7 @@ import java.util.regex.Pattern;
 /**
  * <p>Provides extra functionality for Java Number classes.</p>
  */
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
+@UtilityClass
 public final class NumberUtil {
 
     /** Reusable Long constant for zero. */

@@ -2,8 +2,7 @@ package dev.sbs.api.util;
 
 import dev.sbs.api.builder.HashCodeBuilder;
 import dev.sbs.api.mutable.MutableInt;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
+import lombok.experimental.UtilityClass;
 
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
@@ -23,7 +22,7 @@ import java.util.*;
  * <p>#ThreadSafe#
  */
 @SuppressWarnings("unchecked")
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
+@UtilityClass
 public final class ArrayUtil {
 
     /**

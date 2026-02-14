@@ -1,7 +1,6 @@
 package dev.sbs.api.util;
 
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
+import lombok.experimental.UtilityClass;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.Method;
@@ -22,7 +21,7 @@ import java.util.List;
  * non-canonical method variants work with the JVM names, such as
  * {@code [I}. </p>
  */
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
+@UtilityClass
 public final class ClassUtil {
 
     /**

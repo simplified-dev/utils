@@ -1,7 +1,6 @@
 package dev.sbs.api.util;
 
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
+import lombok.experimental.UtilityClass;
 import org.intellij.lang.annotations.PrintFormat;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -100,7 +99,7 @@ import java.util.regex.Pattern;
  * <p>#ThreadSafe#</p>
  * @see String
  */
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
+@UtilityClass
 public final class StringUtil {
 
     private static final int STRING_BUILDER_SIZE = 256;

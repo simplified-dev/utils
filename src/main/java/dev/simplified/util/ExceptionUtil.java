@@ -1,5 +1,7 @@
 package dev.sbs.api.util;
 
+import lombok.experimental.UtilityClass;
+
 import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -14,9 +16,8 @@ import java.util.StringTokenizer;
 /**
  * <p>Provides utilities for manipulating and examining
  * {@code Throwable} objects.</p>
- *
- * @since 1.0
  */
+@UtilityClass
 public final class ExceptionUtil {
 
     private static final int NOT_FOUND = -1;
@@ -907,12 +908,4 @@ public final class ExceptionUtil {
         throw new UndeclaredThrowableException(throwable);
     }
 
-    /**
-     * <p>
-     * Public constructor allows an instance of {@code ExceptionUtils} to be created, although that is not
-     * normally necessary.
-     * </p>
-     */
-    public ExceptionUtil() {
-    }
 }

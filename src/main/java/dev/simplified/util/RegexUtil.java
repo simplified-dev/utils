@@ -1,8 +1,7 @@
 package dev.sbs.api.util;
 
 import dev.sbs.api.collection.MaxSizeLinkedMap;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
+import lombok.experimental.UtilityClass;
 import org.intellij.lang.annotations.Language;
 
 import java.util.Arrays;
@@ -18,7 +17,7 @@ import java.util.regex.Pattern;
  *
  * @see Pattern
  */
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
+@UtilityClass
 public final class RegexUtil {
 
     private static final LinkedHashMap<String, String> CACHED_COLOR_MESSAGES = new MaxSizeLinkedMap<>(100);
