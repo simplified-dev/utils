@@ -3,7 +3,7 @@ package dev.sbs.api.util;
 import dev.sbs.api.SimplifiedApi;
 import dev.sbs.api.collection.concurrent.Concurrent;
 import dev.sbs.api.collection.concurrent.ConcurrentMap;
-import dev.sbs.api.stream.pair.Pair;
+import dev.sbs.api.tuple.pair.Pair;
 import lombok.Cleanup;
 import lombok.Getter;
 import lombok.SneakyThrows;

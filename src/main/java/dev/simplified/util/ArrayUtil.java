@@ -1,7 +1,7 @@
 package dev.sbs.api.util;
 
 import dev.sbs.api.builder.HashCodeBuilder;
-import dev.sbs.api.collection.mutable.MutableInt;
+import dev.sbs.api.util.mutable.MutableInt;
 import lombok.experimental.UtilityClass;
 
 import java.lang.reflect.Array;
