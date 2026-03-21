@@ -121,7 +121,7 @@ public final class RegexUtil {
      * @see Pattern
      * @see Pattern#DOTALL
      */
-    public static String removeAll(final String text, final String regex) {
+    public static String removeAll(final String text, @Language("RegExp") final String regex) {
         return replaceAll(text, regex, StringUtil.EMPTY);
     }
 
@@ -198,7 +198,7 @@ public final class RegexUtil {
      * @see Pattern
      * @see Pattern#DOTALL
      */
-    public static String removeFirst(final String text, final String regex) {
+    public static String removeFirst(final String text, @Language("RegExp") final String regex) {
         return replaceFirst(text, regex, StringUtil.EMPTY);
     }
 
