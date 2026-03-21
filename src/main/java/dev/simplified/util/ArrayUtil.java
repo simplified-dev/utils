@@ -1,6 +1,5 @@
 package dev.sbs.api.util;
 
-import dev.sbs.api.builder.HashCodeBuilder;
 import dev.sbs.api.util.mutable.MutableInt;
 import lombok.experimental.UtilityClass;
 
@@ -1185,7 +1184,7 @@ public final class ArrayUtil {
      * @return a hash code for the array
      */
     public static int hashCode(final Object array) {
-        return new HashCodeBuilder().append(array).toHashCode();
+        return Objects.hash(array);
     }
 
     /**
