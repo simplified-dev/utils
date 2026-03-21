@@ -10,40 +10,30 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * Contains static utility methods pertaining to primitive types and their corresponding wrapper
- * types.
+ * Utility methods for primitive types, their corresponding wrapper types, and array conversions
+ * between the two.
  */
 @SuppressWarnings("all")
 @UtilityClass
 public final class PrimitiveUtil {
 
-    /**
-     * Returns an immutable map of all nine primitive types (including {@code void}). Note that a
-     * simpler way to test whether a {@code Class} instance is a member of this set is to call {@link
-     * Class#isPrimitive}.
-     */
+    /** Immutable map from each primitive type to its corresponding wrapper type. */
     @Getter private static final Map<Class<?>, Class<?>> primitiveToWrapperTypes;
 
-    /**
-     * Returns an immutable set of all nine primitive-wrapper types (including {@link Void}).
-     */
+    /** Immutable map from each wrapper type to its corresponding primitive type. */
     @Getter private static final Map<Class<?>, Class<?>> wrapperToPrimitiveTypes;
 
-    /**
-     * Maps a primitive class name to its corresponding abbreviation used in array class names.
-     */
+    /** Map from primitive class name to its corresponding abbreviation used in array class names. */
     @Getter private static final Map<String, String> abbreviationMap = new HashMap<>();
 
-    /**
-     * Maps an abbreviation used in array class names to corresponding primitive class name.
-     */
+    /** Map from array class name abbreviation to its corresponding primitive class name. */
     @Getter private static final Map<String, String> reverseAbbreviationMap = new HashMap<>();
 
     /**
-     * Add primitive type abbreviation to maps of abbreviations.
+     * Registers a primitive type abbreviation into both the forward and reverse abbreviation maps.
      *
-     * @param primitive Canonical name of primitive type
-     * @param abbreviation Corresponding abbreviation of primitive type
+     * @param primitive the canonical name of the primitive type
+     * @param abbreviation the corresponding abbreviation of the primitive type
      */
     private static void addAbbreviation(String primitive, String abbreviation) {
         abbreviationMap.put(primitive, abbreviation);
@@ -63,8 +53,6 @@ public final class PrimitiveUtil {
         add(primToWrap, wrapToPrim, long.class, Long.class);
         add(primToWrap, wrapToPrim, short.class, Short.class);
         add(primToWrap, wrapToPrim, void.class, Void.class);
-
-        Class<Void> x = Void.class;
 
         primitiveToWrapperTypes = Collections.unmodifiableMap(primToWrap);
         wrapperToPrimitiveTypes = Collections.unmodifiableMap(wrapToPrim);
@@ -89,9 +77,10 @@ public final class PrimitiveUtil {
     }
 
     /**
-     * Returns {@code true} if {@code type} is one of the nine primitive-wrapper types, such as {@link
-     * Integer}.
+     * Checks whether {@code type} is one of the nine primitive-wrapper types, such as {@link Integer}.
      *
+     * @param type the class to check
+     * @return {@code true} if the type is a primitive wrapper
      * @see Class#isPrimitive
      */
     public static boolean isWrapperType(@NotNull Class<?> type) {
@@ -107,6 +96,10 @@ public final class PrimitiveUtil {
      *     wrap(Integer.class) == Integer.class
      *     wrap(String.class) == String.class
      * </pre>
+     *
+     * @param <T>  the type
+     * @param type the class to wrap
+     * @return the wrapper type, or the original type if not primitive
      */
     public static <T> Class<T> wrap(@NotNull Class<T> type) {
         Class<T> wrapped = (Class<T>) primitiveToWrapperTypes.get(type);
@@ -122,19 +115,21 @@ public final class PrimitiveUtil {
      *     unwrap(int.class) == int.class
      *     unwrap(String.class) == String.class
      * </pre>
+     *
+     * @param <T>  the type
+     * @param type the class to unwrap
+     * @return the primitive type, or the original type if not a wrapper
      */
     public static <T> Class<T> unwrap(@NotNull Class<T> type) {
         Class<T> unwrapped = (Class<T>) wrapperToPrimitiveTypes.get(type);
         return (unwrapped == null) ? type : unwrapped;
     }
 
-
     /**
-     * <p>Converts an array of primitive booleans to objects.
+     * Converts an array of primitive booleans to objects.
+     * Returns {@code null} for a {@code null} input array.
      *
-     * <p>This method returns {@code null} for a {@code null} input array.
-     *
-     * @param array  a {@code boolean} array
+     * @param array a {@code boolean} array
      * @return a {@code Boolean} array, {@code null} if null array input
      */
     public static Boolean[] wrap(final boolean[] array) {
@@ -151,11 +146,10 @@ public final class PrimitiveUtil {
     }
 
     /**
-     * <p>Converts an array of primitive bytes to objects.
+     * Converts an array of primitive bytes to objects.
+     * Returns {@code null} for a {@code null} input array.
      *
-     * <p>This method returns {@code null} for a {@code null} input array.
-     *
-     * @param array  a {@code byte} array
+     * @param array a {@code byte} array
      * @return a {@code Byte} array, {@code null} if null array input
      */
     public static Byte[] wrap(final byte[] array) {
@@ -172,9 +166,8 @@ public final class PrimitiveUtil {
     }
 
     /**
-     * <p>Converts an array of primitive chars to objects.
-     *
-     * <p>This method returns {@code null} for a {@code null} input array.
+     * Converts an array of primitive chars to objects.
+     * Returns {@code null} for a {@code null} input array.
      *
      * @param array a {@code char} array
      * @return a {@code Character} array, {@code null} if null array input
@@ -193,11 +186,10 @@ public final class PrimitiveUtil {
     }
 
     /**
-     * <p>Converts an array of primitive doubles to objects.
+     * Converts an array of primitive doubles to objects.
+     * Returns {@code null} for a {@code null} input array.
      *
-     * <p>This method returns {@code null} for a {@code null} input array.
-     *
-     * @param array  a {@code double} array
+     * @param array a {@code double} array
      * @return a {@code Double} array, {@code null} if null array input
      */
     public static Double[] wrap(final double[] array) {
@@ -214,11 +206,10 @@ public final class PrimitiveUtil {
     }
 
     /**
-     * <p>Converts an array of primitive floats to objects.
+     * Converts an array of primitive floats to objects.
+     * Returns {@code null} for a {@code null} input array.
      *
-     * <p>This method returns {@code null} for a {@code null} input array.
-     *
-     * @param array  a {@code float} array
+     * @param array a {@code float} array
      * @return a {@code Float} array, {@code null} if null array input
      */
     public static Float[] wrap(final float[] array) {
@@ -235,11 +226,10 @@ public final class PrimitiveUtil {
     }
 
     /**
-     * <p>Converts an array of primitive ints to objects.
+     * Converts an array of primitive ints to objects.
+     * Returns {@code null} for a {@code null} input array.
      *
-     * <p>This method returns {@code null} for a {@code null} input array.
-     *
-     * @param array  an {@code int} array
+     * @param array an {@code int} array
      * @return an {@code Integer} array, {@code null} if null array input
      */
     public static Integer[] wrap(final int[] array) {
@@ -256,11 +246,10 @@ public final class PrimitiveUtil {
     }
 
     /**
-     * <p>Converts an array of primitive longs to objects.
+     * Converts an array of primitive longs to objects.
+     * Returns {@code null} for a {@code null} input array.
      *
-     * <p>This method returns {@code null} for a {@code null} input array.
-     *
-     * @param array  a {@code long} array
+     * @param array a {@code long} array
      * @return a {@code Long} array, {@code null} if null array input
      */
     public static Long[] wrap(final long[] array) {
@@ -277,11 +266,10 @@ public final class PrimitiveUtil {
     }
 
     /**
-     * <p>Converts an array of primitive shorts to objects.
+     * Converts an array of primitive shorts to objects.
+     * Returns {@code null} for a {@code null} input array.
      *
-     * <p>This method returns {@code null} for a {@code null} input array.
-     *
-     * @param array  a {@code short} array
+     * @param array a {@code short} array
      * @return a {@code Short} array, {@code null} if null array input
      */
     public static Short[] wrap(final short[] array) {
@@ -297,15 +285,13 @@ public final class PrimitiveUtil {
         return result;
     }
 
-
     /**
-     * <p>Converts an array of object Booleans to primitives.
+     * Converts an array of {@link Boolean} objects to primitives.
+     * Returns {@code null} for a {@code null} input array.
      *
-     * <p>This method returns {@code null} for a {@code null} input array.
-     *
-     * @param array  a {@code Boolean} array, may be {@code null}
+     * @param array a {@code Boolean} array, may be {@code null}
      * @return a {@code boolean} array, {@code null} if null array input
-     * @throws NullPointerException if array content is {@code null}
+     * @throws NullPointerException if any array element is {@code null}
      */
     public static boolean[] unwrap(final Boolean[] array) {
         if (array == null)
@@ -321,12 +307,11 @@ public final class PrimitiveUtil {
     }
 
     /**
-     * <p>Converts an array of object Booleans to primitives handling {@code null}.
+     * Converts an array of {@link Boolean} objects to primitives, substituting a default value
+     * for {@code null} elements. Returns {@code null} for a {@code null} input array.
      *
-     * <p>This method returns {@code null} for a {@code null} input array.
-     *
-     * @param array  a {@code Boolean} array, may be {@code null}
-     * @param valueForNull  the value to insert if {@code null} found
+     * @param array a {@code Boolean} array, may be {@code null}
+     * @param valueForNull the value to insert if {@code null} found
      * @return a {@code boolean} array, {@code null} if null array input
      */
     public static boolean[] unwrap(final Boolean[] array, final boolean valueForNull) {
@@ -344,13 +329,12 @@ public final class PrimitiveUtil {
     }
 
     /**
-     * <p>Converts an array of object Bytes to primitives.
+     * Converts an array of {@link Byte} objects to primitives.
+     * Returns {@code null} for a {@code null} input array.
      *
-     * <p>This method returns {@code null} for a {@code null} input array.
-     *
-     * @param array  a {@code Byte} array, may be {@code null}
+     * @param array a {@code Byte} array, may be {@code null}
      * @return a {@code byte} array, {@code null} if null array input
-     * @throws NullPointerException if array content is {@code null}
+     * @throws NullPointerException if any array element is {@code null}
      */
     public static byte[] unwrap(final Byte[] array) {
         if (array == null)
@@ -366,12 +350,11 @@ public final class PrimitiveUtil {
     }
 
     /**
-     * <p>Converts an array of object Bytes to primitives handling {@code null}.
+     * Converts an array of {@link Byte} objects to primitives, substituting a default value
+     * for {@code null} elements. Returns {@code null} for a {@code null} input array.
      *
-     * <p>This method returns {@code null} for a {@code null} input array.
-     *
-     * @param array  a {@code Byte} array, may be {@code null}
-     * @param valueForNull  the value to insert if {@code null} found
+     * @param array a {@code Byte} array, may be {@code null}
+     * @param valueForNull the value to insert if {@code null} found
      * @return a {@code byte} array, {@code null} if null array input
      */
     public static byte[] unwrap(final Byte[] array, final byte valueForNull) {
@@ -390,13 +373,12 @@ public final class PrimitiveUtil {
     }
 
     /**
-     * <p>Converts an array of object Characters to primitives.
+     * Converts an array of {@link Character} objects to primitives.
+     * Returns {@code null} for a {@code null} input array.
      *
-     * <p>This method returns {@code null} for a {@code null} input array.
-     *
-     * @param array  a {@code Character} array, may be {@code null}
+     * @param array a {@code Character} array, may be {@code null}
      * @return a {@code char} array, {@code null} if null array input
-     * @throws NullPointerException if array content is {@code null}
+     * @throws NullPointerException if any array element is {@code null}
      */
     public static char[] unwrap(final Character[] array) {
         if (array == null)
@@ -412,12 +394,11 @@ public final class PrimitiveUtil {
     }
 
     /**
-     * <p>Converts an array of object Character to primitives handling {@code null}.
+     * Converts an array of {@link Character} objects to primitives, substituting a default value
+     * for {@code null} elements. Returns {@code null} for a {@code null} input array.
      *
-     * <p>This method returns {@code null} for a {@code null} input array.
-     *
-     * @param array  a {@code Character} array, may be {@code null}
-     * @param valueForNull  the value to insert if {@code null} found
+     * @param array a {@code Character} array, may be {@code null}
+     * @param valueForNull the value to insert if {@code null} found
      * @return a {@code char} array, {@code null} if null array input
      */
     public static char[] unwrap(final Character[] array, final char valueForNull) {
@@ -436,13 +417,12 @@ public final class PrimitiveUtil {
     }
 
     /**
-     * <p>Converts an array of object Doubles to primitives.
+     * Converts an array of {@link Double} objects to primitives.
+     * Returns {@code null} for a {@code null} input array.
      *
-     * <p>This method returns {@code null} for a {@code null} input array.
-     *
-     * @param array  a {@code Double} array, may be {@code null}
+     * @param array a {@code Double} array, may be {@code null}
      * @return a {@code double} array, {@code null} if null array input
-     * @throws NullPointerException if array content is {@code null}
+     * @throws NullPointerException if any array element is {@code null}
      */
     public static double[] unwrap(final Double[] array) {
         if (array == null)
@@ -458,12 +438,11 @@ public final class PrimitiveUtil {
     }
 
     /**
-     * <p>Converts an array of object Doubles to primitives handling {@code null}.
+     * Converts an array of {@link Double} objects to primitives, substituting a default value
+     * for {@code null} elements. Returns {@code null} for a {@code null} input array.
      *
-     * <p>This method returns {@code null} for a {@code null} input array.
-     *
-     * @param array  a {@code Double} array, may be {@code null}
-     * @param valueForNull  the value to insert if {@code null} found
+     * @param array a {@code Double} array, may be {@code null}
+     * @param valueForNull the value to insert if {@code null} found
      * @return a {@code double} array, {@code null} if null array input
      */
     public static double[] unwrap(final Double[] array, final double valueForNull) {
@@ -482,13 +461,12 @@ public final class PrimitiveUtil {
     }
 
     /**
-     * <p>Converts an array of object Floats to primitives.
+     * Converts an array of {@link Float} objects to primitives.
+     * Returns {@code null} for a {@code null} input array.
      *
-     * <p>This method returns {@code null} for a {@code null} input array.
-     *
-     * @param array  a {@code Float} array, may be {@code null}
+     * @param array a {@code Float} array, may be {@code null}
      * @return a {@code float} array, {@code null} if null array input
-     * @throws NullPointerException if array content is {@code null}
+     * @throws NullPointerException if any array element is {@code null}
      */
     public static float[] unwrap(final Float[] array) {
         if (array == null)
@@ -504,12 +482,11 @@ public final class PrimitiveUtil {
     }
 
     /**
-     * <p>Converts an array of object Floats to primitives handling {@code null}.
+     * Converts an array of {@link Float} objects to primitives, substituting a default value
+     * for {@code null} elements. Returns {@code null} for a {@code null} input array.
      *
-     * <p>This method returns {@code null} for a {@code null} input array.
-     *
-     * @param array  a {@code Float} array, may be {@code null}
-     * @param valueForNull  the value to insert if {@code null} found
+     * @param array a {@code Float} array, may be {@code null}
+     * @param valueForNull the value to insert if {@code null} found
      * @return a {@code float} array, {@code null} if null array input
      */
     public static float[] unwrap(final Float[] array, final float valueForNull) {
@@ -528,13 +505,12 @@ public final class PrimitiveUtil {
     }
 
     /**
-     * <p>Converts an array of object Integers to primitives.
+     * Converts an array of {@link Integer} objects to primitives.
+     * Returns {@code null} for a {@code null} input array.
      *
-     * <p>This method returns {@code null} for a {@code null} input array.
-     *
-     * @param array  a {@code Integer} array, may be {@code null}
+     * @param array an {@code Integer} array, may be {@code null}
      * @return an {@code int} array, {@code null} if null array input
-     * @throws NullPointerException if array content is {@code null}
+     * @throws NullPointerException if any array element is {@code null}
      */
     public static int[] unwrap(final Integer[] array) {
         if (array == null)
@@ -550,12 +526,11 @@ public final class PrimitiveUtil {
     }
 
     /**
-     * <p>Converts an array of object Integer to primitives handling {@code null}.
+     * Converts an array of {@link Integer} objects to primitives, substituting a default value
+     * for {@code null} elements. Returns {@code null} for a {@code null} input array.
      *
-     * <p>This method returns {@code null} for a {@code null} input array.
-     *
-     * @param array  a {@code Integer} array, may be {@code null}
-     * @param valueForNull  the value to insert if {@code null} found
+     * @param array an {@code Integer} array, may be {@code null}
+     * @param valueForNull the value to insert if {@code null} found
      * @return an {@code int} array, {@code null} if null array input
      */
     public static int[] unwrap(final Integer[] array, final int valueForNull) {
@@ -574,13 +549,12 @@ public final class PrimitiveUtil {
     }
 
     /**
-     * <p>Converts an array of object Longs to primitives.
+     * Converts an array of {@link Long} objects to primitives.
+     * Returns {@code null} for a {@code null} input array.
      *
-     * <p>This method returns {@code null} for a {@code null} input array.
-     *
-     * @param array  a {@code Long} array, may be {@code null}
+     * @param array a {@code Long} array, may be {@code null}
      * @return a {@code long} array, {@code null} if null array input
-     * @throws NullPointerException if array content is {@code null}
+     * @throws NullPointerException if any array element is {@code null}
      */
     public static long[] unwrap(final Long[] array) {
         if (array == null)
@@ -596,12 +570,11 @@ public final class PrimitiveUtil {
     }
 
     /**
-     * <p>Converts an array of object Long to primitives handling {@code null}.
+     * Converts an array of {@link Long} objects to primitives, substituting a default value
+     * for {@code null} elements. Returns {@code null} for a {@code null} input array.
      *
-     * <p>This method returns {@code null} for a {@code null} input array.
-     *
-     * @param array  a {@code Long} array, may be {@code null}
-     * @param valueForNull  the value to insert if {@code null} found
+     * @param array a {@code Long} array, may be {@code null}
+     * @param valueForNull the value to insert if {@code null} found
      * @return a {@code long} array, {@code null} if null array input
      */
     public static long[] unwrap(final Long[] array, final long valueForNull) {
@@ -620,11 +593,11 @@ public final class PrimitiveUtil {
     }
 
     /**
-     * <p>Create an array of primitive type from an array of wrapper types.
+     * Creates an array of the corresponding primitive type from an array of wrapper objects.
+     * Returns {@code null} for a {@code null} input array. If the component type is not a
+     * recognized wrapper type, the original array is returned unchanged.
      *
-     * <p>This method returns {@code null} for a {@code null} input array.
-     *
-     * @param array  an array of wrapper object
+     * @param array an array of wrapper objects
      * @return an array of the corresponding primitive type, or the original array
      */
     public static Object unwrap(final Object array) {
@@ -649,13 +622,12 @@ public final class PrimitiveUtil {
     }
 
     /**
-     * <p>Converts an array of object Shorts to primitives.
+     * Converts an array of {@link Short} objects to primitives.
+     * Returns {@code null} for a {@code null} input array.
      *
-     * <p>This method returns {@code null} for a {@code null} input array.
-     *
-     * @param array  a {@code Short} array, may be {@code null}
-     * @return a {@code byte} array, {@code null} if null array input
-     * @throws NullPointerException if array content is {@code null}
+     * @param array a {@code Short} array, may be {@code null}
+     * @return a {@code short} array, {@code null} if null array input
+     * @throws NullPointerException if any array element is {@code null}
      */
     public static short[] unwrap(final Short[] array) {
         if (array == null)
@@ -671,13 +643,12 @@ public final class PrimitiveUtil {
     }
 
     /**
-     * <p>Converts an array of object Short to primitives handling {@code null}.
+     * Converts an array of {@link Short} objects to primitives, substituting a default value
+     * for {@code null} elements. Returns {@code null} for a {@code null} input array.
      *
-     * <p>This method returns {@code null} for a {@code null} input array.
-     *
-     * @param array  a {@code Short} array, may be {@code null}
-     * @param valueForNull  the value to insert if {@code null} found
-     * @return a {@code byte} array, {@code null} if null array input
+     * @param array a {@code Short} array, may be {@code null}
+     * @param valueForNull the value to insert if {@code null} found
+     * @return a {@code short} array, {@code null} if null array input
      */
     public static short[] unwrap(final Short[] array, final short valueForNull) {
         if (array == null)
