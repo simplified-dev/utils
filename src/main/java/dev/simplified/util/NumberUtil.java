@@ -1,6 +1,6 @@
 package dev.sbs.api.util;
 
-import dev.sbs.api.reflection.Reflection;
+import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
 import org.jetbrains.annotations.Nullable;
 
@@ -328,10 +328,11 @@ public final class NumberUtil {
      * @param clazz the target number class
      * @return the converted number, or the default value if conversion fails
      */
+    @SneakyThrows
     public static <N extends Number> N to(Object value, Number defaultValue, Class<N> clazz) {
-        Reflection<N> number = new Reflection<>(clazz);
         String strValue = String.valueOf(value);
-        return clazz.cast(number.newInstance(isCreatable(strValue) ? new BigDecimal(strValue).toPlainString() : String.valueOf(defaultValue)));
+        String arg = isCreatable(strValue) ? new BigDecimal(strValue).toPlainString() : String.valueOf(defaultValue);
+        return clazz.cast(clazz.getConstructor(String.class).newInstance(arg));
     }
 
     /**
