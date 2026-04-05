@@ -165,7 +165,7 @@ public final class NumberUtil {
      * @return the clamped value within [{@code min}, {@code max}]
      */
     public static int ensureRange(int value, int min, int max) {
-        return Math.min(Math.max(value, min), max);
+        return Math.clamp(value, min, max);
     }
 
     /**
@@ -1611,8 +1611,10 @@ public final class NumberUtil {
      * @throws IllegalArgumentException if {@code array} is either {@code null} or empty
      */
     private static void validateArray(final Object array) {
-        Preconditions.checkNotNull(array, "The Array must not be null.");
-        Preconditions.checkArgument(Array.getLength(array) != 0, "Array cannot be empty.");
+        if (array == null)
+            throw new NullPointerException("The Array must not be null");
+        if (Array.getLength(array) == 0)
+            throw new IllegalArgumentException("Array cannot be empty");
     }
 
     // 3 param min
