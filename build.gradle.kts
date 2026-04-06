@@ -35,3 +35,7 @@ dependencies {
     testRuntimeOnly(libs.junit.jupiter.engine)
     testImplementation(libs.junit.platform.launcher)
 }
+
+tasks.test {
+    useJUnitPlatform()
+}
