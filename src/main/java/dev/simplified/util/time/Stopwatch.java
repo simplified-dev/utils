@@ -1,8 +1,5 @@
 package dev.simplified.util.time;
 
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.Duration;
@@ -17,28 +14,20 @@ import java.util.concurrent.TimeUnit;
  * completion time) or {@link #of(Instant, Instant)} for pre-existing timestamp pairs
  * (e.g. reconstructed from serialized headers).
  *
+ * @param startedAt the instant at which the timed operation started
+ * @param completedAt the instant at which the timed operation completed
+ * @param durationNanos the elapsed time of the operation in nanoseconds
  * @see Instant
  * @see Duration
  */
-@Getter
-@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-public final class Stopwatch {
-
-    /** The instant at which the timed operation started. */
-    private final @NotNull Instant startedAt;
-
-    /** The instant at which the timed operation completed. */
-    private final @NotNull Instant completedAt;
-
-    /** The elapsed time of the operation in nanoseconds. */
-    private final long durationNanos;
+public record Stopwatch(@NotNull Instant startedAt, @NotNull Instant completedAt, long durationNanos) {
 
     /**
      * Returns the elapsed time of the operation in milliseconds.
      *
      * @return the duration in milliseconds
      */
-    public long getDurationMillis() {
+    public long durationMillis() {
         return TimeUnit.NANOSECONDS.toMillis(this.durationNanos);
     }
 
