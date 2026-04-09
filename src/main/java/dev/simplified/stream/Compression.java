@@ -217,8 +217,32 @@ public enum Compression {
 	 * @throws CompressionException if an I/O error occurs
 	 */
 	public static byte[] compress(byte[] data, @NotNull Compression compression) throws CompressionException {
-		if (compression == NONE)
-			return data;
+		return compress(data, 0, data.length, compression);
+	}
+
+	/**
+	 * Compresses a slice of a byte array using the specified compression algorithm.
+	 *
+	 * <p>Lets callers hand off an oversized buffer plus a valid-length count instead of trimming
+	 * to an exact-size array first - useful when the producer already has a growable buffer
+	 * (e.g. the NBT serializer) and would otherwise pay a full-payload {@code arraycopy} just to
+	 * satisfy the byte-array-in/byte-array-out contract.</p>
+	 *
+	 * @param data the buffer containing the uncompressed data
+	 * @param offset the first valid byte in {@code data}
+	 * @param length the number of valid bytes starting at {@code offset}
+	 * @param compression the compression algorithm to use
+	 * @return the compressed data
+	 * @throws CompressionException if an I/O error occurs
+	 */
+	public static byte[] compress(byte[] data, int offset, int length, @NotNull Compression compression) throws CompressionException {
+		if (compression == NONE) {
+			// Callers still expect an independent copy - returning a slice would leak internal
+			// buffer state to the caller.
+			byte[] out = new byte[length];
+			System.arraycopy(data, offset, out, 0, length);
+			return out;
+		}
 
 		try {
 			@Cleanup ByteArrayDataOutput output = new ByteArrayDataOutput();
@@ -228,7 +252,7 @@ public enum Compression {
 				default -> throw new UnsupportedOperationException("Compression format " + compression + " is not supported");
 			};
 
-			compressedOutput.write(data);
+			compressedOutput.write(data, offset, length);
 			compressedOutput.flush();
 			compressedOutput.close(); // Close the compressor stream to finish the compression
 			return output.toByteArray();
@@ -286,6 +310,35 @@ public enum Compression {
 			return switch (compression) {
 				case GZIP -> new GZIPInputStream(inputStream, 65536);
 				case ZLIB -> new InflaterInputStream(inputStream);
+				default -> throw new UnsupportedOperationException("Compression format " + compression + " is not supported without additional libraries");
+			};
+		} catch (IOException exception) {
+			throw new CompressionException(exception);
+		}
+	}
+
+	/**
+	 * Wraps an output stream with the requested compression format.
+	 *
+	 * <p>Symmetric to {@link #wrap(InputStream)} but takes the compression format explicitly
+	 * because output can't be auto-detected from magic bytes. Returns the original stream
+	 * unchanged for {@link #NONE}. The caller is responsible for closing the returned stream
+	 * (which will cascade to the underlying stream and finish the compression).</p>
+	 *
+	 * @param outputStream the output stream to wrap
+	 * @param compression the compression format to apply
+	 * @return a compressing wrapper stream, or the original stream if {@code compression} is {@link #NONE}
+	 * @throws CompressionException if an I/O error occurs
+	 * @throws UnsupportedOperationException if {@code compression} is not supported without additional libraries
+	 */
+	public static @NotNull OutputStream wrap(@NotNull OutputStream outputStream, @NotNull Compression compression) throws CompressionException {
+		if (compression == NONE)
+			return outputStream;
+
+		try {
+			return switch (compression) {
+				case GZIP -> new GZIPOutputStream(outputStream);
+				case ZLIB -> new DeflaterOutputStream(outputStream);
 				default -> throw new UnsupportedOperationException("Compression format " + compression + " is not supported without additional libraries");
 			};
 		} catch (IOException exception) {
