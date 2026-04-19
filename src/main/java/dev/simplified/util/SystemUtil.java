@@ -39,6 +39,11 @@ import java.util.Scanner;
 public final class SystemUtil {
 
     /**
+     * The {@code os.name} system property - operating system short name.
+     */
+    private static final String OS_NAME_KEY = "os.name";
+
+    /**
      * The {@code user.home} system property - user home directory.
      */
     private static final String USER_HOME_KEY = "user.home";
