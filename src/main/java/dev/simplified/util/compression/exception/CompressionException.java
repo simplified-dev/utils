@@ -1,4 +1,4 @@
-package dev.simplified.stream.exception;
+package dev.simplified.util.compression.exception;
 
 import org.intellij.lang.annotations.PrintFormat;
 import org.jetbrains.annotations.NotNull;

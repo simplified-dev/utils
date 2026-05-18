@@ -1,4 +1,4 @@
-package dev.simplified.stream;
+package dev.simplified.util.io;
 
 import org.jetbrains.annotations.NotNull;
 

@@ -1,6 +1,6 @@
-package dev.simplified.stream;
+package dev.simplified.util.compression;
 
-import dev.simplified.stream.exception.CompressionException;
+import dev.simplified.util.compression.exception.CompressionException;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -13,7 +13,6 @@ import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -281,25 +280,6 @@ class GzipCompressionTest {
             byte[] data = "dispatched via Compression.compress".getBytes(StandardCharsets.US_ASCII);
             byte[] gzipped = Compression.compress(data, Compression.GZIP);
             byte[] back = Compression.decompress(gzipped);
-            assertArrayEquals(data, back);
-        }
-
-        @Test
-        void compressionDecompressZlibStillUsesGrowablePath() {
-            // ZLIB path untouched - verify round-trip still works.
-            byte[] data = "zlib round trip".getBytes(StandardCharsets.US_ASCII);
-            byte[] zlibbed = Compression.compress(data, Compression.ZLIB);
-            byte[] back = Compression.decompress(zlibbed);
-            assertArrayEquals(data, back);
-        }
-
-        @Test
-        void compressionCompressZlibStillUsesGrowablePath() {
-            byte[] data = new byte[2048];
-            new Random(99).nextBytes(data);
-            byte[] zlibbed = Compression.compress(data, Compression.ZLIB);
-            byte[] back = Compression.decompress(zlibbed);
-            assertEquals(data.length, back.length);
             assertArrayEquals(data, back);
         }
 

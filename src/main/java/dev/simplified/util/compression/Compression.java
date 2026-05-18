@@ -1,7 +1,8 @@
-package dev.simplified.stream;
+package dev.simplified.util.compression;
 
-import dev.simplified.stream.exception.CompressionException;
-import lombok.Cleanup;
+import dev.simplified.util.compression.exception.CompressionException;
+import dev.simplified.util.io.ByteArrayDataInput;
+import dev.simplified.util.io.ByteArrayDataOutput;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
@@ -244,26 +245,17 @@ public enum Compression {
 			return out;
 		}
 
-		// GZIP routes through GzipCompression's pre-sized deflate path - same wire format as the
-		// generic GZIPOutputStream branch below, but the accumulator is sized to zlib's
-		// deflateBound up front so no growth copies occur during compression.
+		// GZIP and ZLIB route through their format-specific pre-sized deflate paths - same wire
+		// format as the legacy GZIPOutputStream / DeflaterOutputStream branches, but the
+		// accumulator is sized to zlib's deflateBound up front so no growth copies occur during
+		// compression.
 		if (compression == GZIP)
 			return GzipCompression.compress(data, offset, length);
 
-		if (compression != ZLIB)
-			throw new UnsupportedOperationException("Compression format " + compression + " is not supported");
+		if (compression == ZLIB)
+			return ZlibCompression.compress(data, offset, length);
 
-		try {
-			@Cleanup ByteArrayDataOutput output = new ByteArrayDataOutput();
-			@Cleanup OutputStream compressedOutput = new DeflaterOutputStream(output);
-
-			compressedOutput.write(data, offset, length);
-			compressedOutput.flush();
-			compressedOutput.close(); // Close the compressor stream to finish the compression
-			return output.toByteArray();
-		} catch (IOException exception) {
-			throw new CompressionException(exception);
-		}
+		throw new UnsupportedOperationException("Compression format " + compression + " is not supported");
 	}
 
 	/**
