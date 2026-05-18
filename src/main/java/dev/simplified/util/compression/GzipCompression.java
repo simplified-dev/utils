@@ -54,11 +54,12 @@ import java.util.zip.GZIPOutputStream;
  *       bytes have been delivered. The fallback surfaces a more accurate error.</li>
  * </ul>
  *
- * <p>Most callers should go through {@link Compression}, which auto-detects format and dispatches
- * here for gzip. Direct calls are fine when the format is known to be gzip in advance.
+ * <p>Package-private. External callers go through {@link Compression}, which auto-detects format
+ * and dispatches here for gzip. Direct calls within the package are fine when the format is
+ * known to be gzip in advance.
  */
 @UtilityClass
-public final class GzipCompression {
+final class GzipCompression {
 
 	/**
 	 * Minimum size of a valid gzip member: 10-byte header plus 8-byte trailer. Inputs shorter than
@@ -118,7 +119,7 @@ public final class GzipCompression {
 	 * @throws CompressionException if {@code gzipped} is non-empty but does not start with the
 	 *     gzip magic, or if an {@link IOException} escapes the underlying inflater
 	 */
-	public static byte @Nullable [] decompress(byte @Nullable [] gzipped) throws CompressionException {
+	static byte @Nullable [] decompress(byte @Nullable [] gzipped) throws CompressionException {
 		if (gzipped == null || gzipped.length == 0)
 			return gzipped;
 
@@ -159,7 +160,7 @@ public final class GzipCompression {
 	 * @return the gzip-compressed bytes
 	 * @throws CompressionException if an {@link IOException} escapes the underlying deflater
 	 */
-	public static byte @NotNull [] compress(byte @NotNull [] data) throws CompressionException {
+	static byte @NotNull [] compress(byte @NotNull [] data) throws CompressionException {
 		return compress(data, 0, data.length);
 	}
 
@@ -185,7 +186,7 @@ public final class GzipCompression {
 	 * @throws IndexOutOfBoundsException if {@code offset} or {@code length} address bytes outside
 	 *     {@code data}, or either is negative
 	 */
-	public static byte @NotNull [] compress(byte @NotNull [] data, int offset, int length) throws CompressionException {
+	static byte @NotNull [] compress(byte @NotNull [] data, int offset, int length) throws CompressionException {
 		java.util.Objects.checkFromIndexSize(offset, length, data.length);
 
 		int bound = worstCaseDeflateBound(length);
