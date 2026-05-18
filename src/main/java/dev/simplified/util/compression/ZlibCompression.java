@@ -28,12 +28,13 @@ import java.util.zip.DeflaterOutputStream;
  * triggers on every non-trivial payload. The final {@link ByteArrayOutputStream#toByteArray}
  * call still trims, paying one trim copy - smaller win than gzip's inflate side, but real.
  *
- * <p>Most callers should go through {@link Compression#compress(byte[], Compression)}, which
- * dispatches here for the {@link Compression#ZLIB} case. Direct calls are fine when the format
- * is known to be zlib in advance.
+ * <p>Package-private. External callers go through
+ * {@link Compression#compress(byte[], Compression)}, which dispatches here for the
+ * {@link Compression#ZLIB} case. Direct calls within the package are fine when the format is
+ * known to be zlib in advance.
  */
 @UtilityClass
-public final class ZlibCompression {
+final class ZlibCompression {
 
 	/**
 	 * Compresses {@code data} into a zlib-framed payload using the worst-case-bound accumulator.
@@ -42,7 +43,7 @@ public final class ZlibCompression {
 	 * @return the zlib-compressed bytes
 	 * @throws CompressionException if an {@link IOException} escapes the underlying deflater
 	 */
-	public static byte @NotNull [] compress(byte @NotNull [] data) throws CompressionException {
+	static byte @NotNull [] compress(byte @NotNull [] data) throws CompressionException {
 		return compress(data, 0, data.length);
 	}
 
@@ -68,7 +69,7 @@ public final class ZlibCompression {
 	 * @throws IndexOutOfBoundsException if {@code offset} or {@code length} address bytes
 	 *     outside {@code data}, or either is negative
 	 */
-	public static byte @NotNull [] compress(byte @NotNull [] data, int offset, int length) throws CompressionException {
+	static byte @NotNull [] compress(byte @NotNull [] data, int offset, int length) throws CompressionException {
 		java.util.Objects.checkFromIndexSize(offset, length, data.length);
 
 		int bound = worstCaseDeflateBound(length);
