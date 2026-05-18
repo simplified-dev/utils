@@ -114,8 +114,8 @@ dependencies {
 Zero-copy byte array reading and writing:
 
 ```java
-import dev.simplified.stream.ByteArrayDataOutput;
-import dev.simplified.stream.ByteArrayDataInput;
+import dev.simplified.util.io.ByteArrayDataOutput;
+import dev.simplified.util.io.ByteArrayDataInput;
 
 // Write data
 ByteArrayDataOutput output = new ByteArrayDataOutput();
@@ -134,7 +134,7 @@ String text = input.readUTF();
 Compress and decompress byte arrays:
 
 ```java
-import dev.simplified.stream.Compression;
+import dev.simplified.util.compression.Compression;
 
 byte[] compressed = Compression.compress(data);
 byte[] decompressed = Compression.decompress(compressed);
@@ -189,13 +189,16 @@ long elapsedMs = stopwatch.elapsedMillis();
 utils/
 ├── src/
 │   ├── main/java/dev/simplified/
-│   │   ├── stream/
-│   │   │   ├── ByteArrayDataInput.java     # Zero-copy byte array reading
-│   │   │   ├── ByteArrayDataOutput.java    # Zero-copy byte array writing
-│   │   │   ├── Compression.java            # Data compression/decompression
-│   │   │   └── exception/
-│   │   │       └── CompressionException.java
 │   │   └── util/
+│   │       ├── compression/
+│   │       │   ├── Compression.java        # Compression dispatch + format detection
+│   │       │   ├── GzipCompression.java    # Pre-sized gzip inflate/deflate
+│   │       │   ├── ZlibCompression.java    # Pre-sized zlib deflate
+│   │       │   └── exception/
+│   │       │       └── CompressionException.java
+│   │       ├── io/
+│   │       │   ├── ByteArrayDataInput.java     # Zero-copy byte array reading
+│   │       │   └── ByteArrayDataOutput.java    # Zero-copy byte array writing
 │   │       ├── ArrayUtil.java              # Array operations
 │   │       ├── CharUtil.java               # Character utilities
 │   │       ├── ClassUtil.java              # Reflective class operations

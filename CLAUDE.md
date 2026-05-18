@@ -3,9 +3,10 @@
 General-purpose utility library with binary I/O streams, compression, and common helpers.
 
 ## Package Structure
-- `dev.simplified.stream` - ByteArrayDataInput, ByteArrayDataOutput, Compression
-- `dev.simplified.stream.exception` - CompressionException
 - `dev.simplified.util` - ArrayUtil, CharUtil, ClassUtil, ExceptionUtil, LogUtil, NumberUtil, PrimitiveUtil, Range, RegexUtil, StringUtil, SystemUtil
+- `dev.simplified.util.compression` - Compression, GzipCompression, ZlibCompression
+- `dev.simplified.util.compression.exception` - CompressionException
+- `dev.simplified.util.io` - ByteArrayDataInput, ByteArrayDataOutput
 - `dev.simplified.util.mutable` - Mutable, MutableBoolean, MutableByte, MutableDouble, MutableFloat, MutableInt, MutableLong, MutableShort
 - `dev.simplified.util.time` - SimpleDate, Stopwatch
 
@@ -29,5 +30,5 @@ General-purpose utility library with binary I/O streams, compression, and common
 
 ## Stats
 - Java 21, group `dev.simplified`, version `1.0.0`
-- 25 source files, 1 test file
+- 26 source files, 2 test files
 - Published via JitPack: `com.github.simplified-dev:utils:master-SNAPSHOT`

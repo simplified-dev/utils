@@ -1,4 +1,4 @@
-package dev.simplified.stream;
+package dev.simplified.util.io;
 
 import lombok.SneakyThrows;
 import org.jetbrains.annotations.NotNull;
