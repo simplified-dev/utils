@@ -8749,23 +8749,107 @@ public final class StringUtil {
     }
 
     /**
-     * Converts a snake_case column name (e.g. {@code zone_id}) to a camelCase Java field name
-     * (e.g. {@code zoneId}).
+     * Word-boundary pattern shared by {@link #toCamelCase(String)}, {@link #toPascalCase(String)},
+     * and {@link #toSnakeCase(String)}: a run of whitespace / {@code _} / {@code -}, a
+     * lower-to-upper transition, or the acronym-to-word transition that keeps an acronym run
+     * together (so {@code XMLParser} splits as {@code XML}, {@code Parser}).
      */
-    public static @NotNull String toCamelCase(@NotNull String snakeCase) {
-        StringBuilder result = new StringBuilder();
-        boolean nextUpper = false;
+    private static final @NotNull Pattern CASE_WORD_BOUNDARY = Pattern.compile(
+        "[\\s_-]+|(?<=[a-z])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])"
+    );
 
-        for (char c : snakeCase.toCharArray()) {
-            if (c == '_')
-                nextUpper = true;
-            else if (nextUpper) {
-                result.append(Character.toUpperCase(c));
-                nextUpper = false;
-            } else
-                result.append(c);
+    /**
+     * Converts {@code str} to {@code camelCase} - words lower-cased and concatenated with no
+     * separator, the first word left lower-case and every later word's first character
+     * upper-cased. Words split on runs of whitespace / {@code _} / {@code -} and at case
+     * transitions (a lower-to-upper boundary and the acronym boundary that keeps {@code XMLParser}
+     * as {@code XML}, {@code Parser}, giving {@code xmlParser}); existing separators are dropped.
+     *
+     * @param str the string to convert, not null
+     * @return the {@code camelCase} form of {@code str}
+     */
+    public static @NotNull String toCamelCase(@NotNull String str) {
+        String[] words = CASE_WORD_BOUNDARY.split(str);
+        StringBuilder result = new StringBuilder(str.length());
+        boolean first = true;
+        for (String word : words) {
+            if (word.isEmpty()) continue;
+            String lower = word.toLowerCase();
+            if (first) {
+                result.append(lower);
+                first = false;
+            } else {
+                result.append(Character.toUpperCase(lower.charAt(0))).append(lower, 1, lower.length());
+            }
         }
+        return result.toString();
+    }
 
+    /**
+     * Converts {@code str} to {@code PascalCase} - every word lower-cased then first-character
+     * upper-cased and concatenated with no separator. Word splitting matches
+     * {@link #toCamelCase(String)} (runs of whitespace / {@code _} / {@code -} and case
+     * transitions); existing separators are dropped.
+     *
+     * @param str the string to convert, not null
+     * @return the {@code PascalCase} form of {@code str}
+     */
+    public static @NotNull String toPascalCase(@NotNull String str) {
+        String[] words = CASE_WORD_BOUNDARY.split(str);
+        StringBuilder result = new StringBuilder(str.length());
+        for (String word : words) {
+            if (word.isEmpty()) continue;
+            String lower = word.toLowerCase();
+            result.append(Character.toUpperCase(lower.charAt(0))).append(lower, 1, lower.length());
+        }
+        return result.toString();
+    }
+
+    /**
+     * Converts {@code str} to {@code snake_case} - words lower-cased and joined with a single
+     * {@code _}. Word splitting matches {@link #toCamelCase(String)} (runs of whitespace /
+     * {@code _} / {@code -} and case transitions); existing separators are dropped.
+     *
+     * @param str the string to convert, not null
+     * @return the {@code snake_case} form of {@code str}
+     */
+    public static @NotNull String toSnakeCase(@NotNull String str) {
+        String[] words = CASE_WORD_BOUNDARY.split(str);
+        StringBuilder result = new StringBuilder(str.length());
+        boolean first = true;
+        for (String word : words) {
+            if (word.isEmpty()) continue;
+            if (!first) result.append('_');
+            result.append(word.toLowerCase());
+            first = false;
+        }
+        return result.toString();
+    }
+
+    /**
+     * Converts {@code str} to {@code Title Case} - the first character of each whitespace-delimited
+     * word upper-cased and every other character lower-cased, with all whitespace preserved
+     * verbatim. Unlike {@link #toCamelCase(String)} this splits on whitespace only, so punctuation,
+     * digits, and hyphens stay in place ({@code self-reliance} becomes {@code Self-reliance}).
+     *
+     * @param str the string to convert, not null
+     * @return the {@code Title Case} form of {@code str}
+     */
+    public static @NotNull String toTitleCase(@NotNull String str) {
+        StringBuilder result = new StringBuilder(str.length());
+        boolean atWordStart = true;
+        for (int i = 0; i < str.length(); i++) {
+            char c = str.charAt(i);
+            if (Character.isWhitespace(c)) {
+                result.append(c);
+                atWordStart = true;
+            } else if (atWordStart) {
+                result.append(Character.toUpperCase(c));
+                atWordStart = false;
+            } else {
+                result.append(Character.toLowerCase(c));
+            }
+        }
         return result.toString();
     }
 
