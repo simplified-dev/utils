@@ -1,6 +1,6 @@
 package dev.simplified.util.io;
 
-import lombok.SneakyThrows;
+import dev.simplified.annotations.SilentThrows;
 import org.jetbrains.annotations.NotNull;
 
 import javax.imageio.ImageIO;
@@ -47,7 +47,7 @@ public class ByteArrayDataOutput extends DataOutputStream {
         return this.getUnderlying().toString();
     }
 
-    @SneakyThrows
+    @SilentThrows
     public String toString(@NotNull String charsetName) {
         return this.getUnderlying().toString(charsetName);
     }
@@ -60,7 +60,7 @@ public class ByteArrayDataOutput extends DataOutputStream {
         ImageIO.write(renderedImage, formatName, this);
     }
 
-    @SneakyThrows
+    @SilentThrows
     public void writeTo(@NotNull OutputStream outputStream) {
         this.getUnderlying().writeTo(outputStream);
     }

@@ -1,13 +1,13 @@
 package dev.simplified.util;
 
+import dev.simplified.annotations.Cleanup;
+import dev.simplified.annotations.Getter;
+import dev.simplified.annotations.SilentThrows;
+import dev.simplified.annotations.UtilityClass;
 import dev.simplified.collection.Concurrent;
 import dev.simplified.collection.ConcurrentList;
 import dev.simplified.collection.ConcurrentMap;
 import dev.simplified.collection.tuple.pair.Pair;
-import lombok.Cleanup;
-import lombok.Getter;
-import lombok.SneakyThrows;
-import lombok.experimental.UtilityClass;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -279,7 +279,7 @@ public final class SystemUtil {
      *
      * @return the preferred outbound network address
      */
-    @SneakyThrows
+    @SilentThrows
     public static @NotNull InetAddress getPreferredAddress() {
         try (final DatagramSocket socket = new DatagramSocket()) {
             socket.connect(InetAddress.getByName("8.8.8.8"), 10002);
@@ -337,7 +337,7 @@ public final class SystemUtil {
      *
      * @return the parent directory of this class's code source location
      */
-    @SneakyThrows
+    @SilentThrows
     public static @NotNull File getCurrentDirectory() {
         return new File(SystemUtil.class.getProtectionDomain().getCodeSource().getLocation().toURI()).getParentFile();
     }
@@ -444,7 +444,7 @@ public final class SystemUtil {
      * @param resourcePath the classpath-relative resource path
      * @return the full byte contents of the resource, or an empty array if not found
      */
-    @SneakyThrows
+    @SilentThrows
     public static byte[] readResource(@NotNull String resourcePath) {
         @Cleanup InputStream inputStream = getResource(resourcePath);
         return inputStream != null ? inputStream.readAllBytes() : new byte[0];

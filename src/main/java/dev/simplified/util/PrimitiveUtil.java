@@ -1,7 +1,7 @@
 package dev.simplified.util;
 
-import lombok.Getter;
-import lombok.experimental.UtilityClass;
+import dev.simplified.annotations.Getter;
+import dev.simplified.annotations.UtilityClass;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collections;

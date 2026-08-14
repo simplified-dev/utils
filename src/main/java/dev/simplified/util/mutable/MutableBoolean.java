@@ -1,5 +1,7 @@
 package dev.simplified.util.mutable;
 
+import dev.simplified.annotations.EqualsAndHashCode;
+
 import java.io.Serializable;
 
 /**
@@ -11,6 +13,7 @@ import java.io.Serializable;
  *
  * @see Boolean
  */
+@EqualsAndHashCode(identity = EqualsAndHashCode.Identity.INSTANCE_OF)
 public class MutableBoolean implements Mutable<Boolean>, Serializable, Comparable<MutableBoolean> {
 
     /**
@@ -120,32 +123,6 @@ public class MutableBoolean implements Mutable<Boolean>, Serializable, Comparabl
      */
     public Boolean toBoolean() {
         return booleanValue();
-    }
-
-    /**
-     * Compares this object to the specified object. The result is {@code true} if and only if the argument is
-     * not {@code null} and is a {@code MutableBoolean} object that contains the same
-     * {@code boolean} value as this object.
-     *
-     * @param obj the object to compare with, {@code null} returns {@code false}
-     * @return {@code true} if the objects are equal; {@code false} otherwise
-     */
-    @Override
-    public boolean equals(final Object obj) {
-        if (obj instanceof MutableBoolean) {
-            return value == ((MutableBoolean) obj).booleanValue();
-        }
-        return false;
-    }
-
-    /**
-     * Returns a hash code consistent with {@link Boolean#hashCode()}.
-     *
-     * @return the hash code of {@code Boolean.TRUE} or {@code Boolean.FALSE}
-     */
-    @Override
-    public int hashCode() {
-        return Boolean.hashCode(value);
     }
 
     /**

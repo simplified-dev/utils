@@ -1,9 +1,10 @@
 package dev.simplified.util;
 
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.RequiredArgsConstructor;
+import dev.simplified.annotations.AccessLevel;
+import dev.simplified.annotations.EnumLookup;
+import dev.simplified.annotations.Getter;
+import dev.simplified.annotations.NoArgsConstructor;
+import dev.simplified.annotations.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -133,6 +134,7 @@ public final class Logging {
      * given severity.
      */
     @Getter
+    @EnumLookup
     @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
     public enum Level {
 
@@ -208,7 +210,7 @@ public final class Logging {
         public static @NotNull Level of(@NotNull String name) {
             String upper = name.toUpperCase();
 
-            for (Level level : values())
+            for (Level level : CACHED_VALUES)
                 if (level.name().equals(upper) || level.log4j2Name.equals(upper) || level.logbackName.equals(upper) || level.julName.equals(upper))
                     return level;
 

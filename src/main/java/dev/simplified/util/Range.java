@@ -1,7 +1,7 @@
 package dev.simplified.util;
 
-import lombok.AccessLevel;
-import lombok.Getter;
+import dev.simplified.annotations.EqualsAndHashCode;
+import dev.simplified.annotations.Getter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -26,6 +26,7 @@ import java.util.Objects;
  * @see Comparator
  */
 @Getter
+@EqualsAndHashCode(of = { "minimum", "maximum" }, cacheHashCode = true)
 public final class Range<T> implements Serializable {
 
     /**
@@ -98,12 +99,6 @@ public final class Range<T> implements Serializable {
      * The comparator used to order elements within this range; never {@code null} (natural ordering uses an internal implementation).
      */
     private final @NotNull Comparator<T> comparator;
-
-    /**
-     * Cached hash code value (safe because this class is immutable).
-     */
-    @Getter(AccessLevel.NONE)
-    private transient int hashCode;
 
     /**
      * The maximum (upper bound) value in this range, inclusive.
@@ -182,51 +177,6 @@ public final class Range<T> implements Serializable {
             return 1;
         else
             return 0;
-    }
-
-    /**
-     * Compares this range to another object for equality.
-     * <p>
-     * Two ranges are equal if their minimum and maximum values are equal, regardless of
-     * any differences in their comparators.
-     *
-     * @param obj the reference object with which to compare
-     * @return {@code true} if the given object is a {@code Range} with equal minimum and maximum values
-     */
-    @Override
-    public boolean equals(final Object obj) {
-        if (obj == this)
-            return true;
-        else if (obj == null || obj.getClass() != getClass())
-            return false;
-        else {
-            @SuppressWarnings("unchecked") // OK because we checked the class above
-            final Range<T> range = (Range<T>) obj;
-            return minimum.equals(range.minimum) &&
-                    maximum.equals(range.maximum);
-        }
-    }
-
-    /**
-     * Computes a hash code for this range based on the minimum and maximum values.
-     * <p>
-     * The hash code is cached after the first computation since this class is immutable.
-     *
-     * @return a hash code value for this range
-     */
-    @Override
-    public int hashCode() {
-        int result = hashCode;
-
-        if (hashCode == 0) {
-            result = 17;
-            result = 37 * result + getClass().hashCode();
-            result = 37 * result + minimum.hashCode();
-            result = 37 * result + maximum.hashCode();
-            hashCode = result;
-        }
-
-        return result;
     }
 
     /**

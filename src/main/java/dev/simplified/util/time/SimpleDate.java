@@ -1,8 +1,11 @@
 package dev.simplified.util.time;
 
+import dev.simplified.annotations.EqualsAndHashCode;
+import dev.simplified.annotations.EqualsExclude;
+import dev.simplified.annotations.EqualsInclude;
+import dev.simplified.annotations.Getter;
+import dev.simplified.annotations.Setter;
 import dev.simplified.util.StringUtil;
-import lombok.Getter;
-import lombok.Setter;
 import org.jetbrains.annotations.NotNull;
 
 import java.sql.Timestamp;
@@ -13,7 +16,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
-import java.util.Objects;
 
 /**
  * An immutable-time, mutable-format date wrapper around an {@link Instant}.
@@ -29,6 +31,7 @@ import java.util.Objects;
  * {@code 1y2w3d4h5m6s} (years, weeks, days, hours, minutes, seconds).
  */
 @Getter
+@EqualsAndHashCode
 public class SimpleDate {
 
     private static final @NotNull DateTimeFormatter DEFAULT_DATE_FORMAT = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
@@ -36,6 +39,7 @@ public class SimpleDate {
     /**
      * The immutable point in time this date represents.
      */
+    @EqualsExclude
     private final @NotNull Instant instant;
 
     /**
@@ -48,6 +52,7 @@ public class SimpleDate {
      * <p>
      * Defaults to America/New_York.
      */
+    @EqualsInclude
     private transient @NotNull ZoneId zoneId;
 
     /**
@@ -56,6 +61,7 @@ public class SimpleDate {
      * Defaults to {@link DateTimeFormatter#ISO_LOCAL_DATE_TIME}.
      */
     @Setter
+    @EqualsInclude
     private transient @NotNull DateTimeFormatter dateFormat;
 
     /**
@@ -94,20 +100,9 @@ public class SimpleDate {
      *
      * @return the epoch timestamp in milliseconds
      */
+    @EqualsInclude
     public long getRealTime() {
         return this.instant.toEpochMilli();
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        SimpleDate that = (SimpleDate) o;
-
-        return this.getRealTime() == that.getRealTime()
-            && Objects.equals(this.getZoneId(), that.getZoneId())
-            && Objects.equals(this.getDateFormat(), that.getDateFormat());
     }
 
     /**
@@ -209,11 +204,6 @@ public class SimpleDate {
      */
     public int getYear() {
         return this.zonedDateTime.getYear();
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(this.getRealTime(), this.getZoneId(), this.getDateFormat());
     }
 
     /**

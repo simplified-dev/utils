@@ -1,10 +1,11 @@
 package dev.simplified.util.compression;
 
+import dev.simplified.annotations.EnumLookup;
+import dev.simplified.annotations.Getter;
+import dev.simplified.annotations.RequiredArgsConstructor;
 import dev.simplified.util.compression.exception.CompressionException;
 import dev.simplified.util.io.ByteArrayDataInput;
 import dev.simplified.util.io.ByteArrayDataOutput;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.BufferedInputStream;
@@ -25,6 +26,7 @@ import java.util.zip.InflaterInputStream;
  * @see <a href="https://en.wikipedia.org/wiki/List_of_file_signatures">List of file signatures</a>
  */
 @Getter
+@EnumLookup
 @RequiredArgsConstructor
 public enum Compression {
 
@@ -133,7 +135,7 @@ public enum Compression {
 	RAR(new int[]{ 0x52, 0x61, 0x72, 0x21, 0x1A, 0x07, 0x00 });
 
 	/**
-	 * Gets the magic bytes (0-255) as integers that identify this compression format.
+	 * The magic bytes (0-255) as integers that identify this compression format.
 	 */
 	private final int @NotNull [] magicBytes;
 
@@ -148,7 +150,7 @@ public enum Compression {
 			return NONE;
 
 		// Try to match against known compression formats
-		for (Compression compression : values()) {
+		for (Compression compression : CACHED_VALUES) {
 			if (compression == NONE)
 				continue;
 
@@ -187,7 +189,7 @@ public enum Compression {
 
 		// Find the longest magic byte sequence to determine the mark limit
 		int maxLength = 0;
-		for (Compression compression : values()) {
+		for (Compression compression : CACHED_VALUES) {
 			if (compression.magicBytes.length > maxLength)
 				maxLength = compression.magicBytes.length;
 		}

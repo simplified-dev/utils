@@ -1,5 +1,7 @@
 package dev.simplified.util.mutable;
 
+import dev.simplified.annotations.EqualsAndHashCode;
+
 /**
  * A mutable {@code float} wrapper.
  * <p>
@@ -8,6 +10,7 @@ package dev.simplified.util.mutable;
  *
  * @see Float
  */
+@EqualsAndHashCode(identity = EqualsAndHashCode.Identity.INSTANCE_OF)
 public class MutableFloat extends Number implements Comparable<MutableFloat>, Mutable<Number> {
 
     /**
@@ -295,54 +298,6 @@ public class MutableFloat extends Number implements Comparable<MutableFloat>, Mu
      */
     public Float toFloat() {
         return floatValue();
-    }
-
-    //-----------------------------------------------------------------------
-    /**
-     * Compares this object against some other object. The result is {@code true} if and only if the argument is
-     * not {@code null} and is a {@code Float} object that represents a {@code float} that has the
-     * identical bit pattern to the bit pattern of the {@code float} represented by this object. For this
-     * purpose, two float values are considered to be the same if and only if the method
-     * {@link Float#floatToIntBits(float)}returns the same int value when applied to each.
-     * <p>
-     * Note that in most cases, for two instances of class {@code Float},{@code f1} and {@code f2},
-     * the value of {@code f1.equals(f2)} is {@code true} if and only if <blockquote>
-     *
-     * <pre>
-     *   f1.floatValue() == f2.floatValue()
-     * </pre>
-     *
-     * </blockquote>
-     * <p>
-     * also has the value {@code true}. However, there are two exceptions:
-     * <ul>
-     * <li>If {@code f1} and {@code f2} both represent {@code Float.NaN}, then the
-     * {@code equals} method returns {@code true}, even though {@code Float.NaN==Float.NaN} has
-     * the value {@code false}.
-     * <li>If {@code f1} represents {@code +0.0f} while {@code f2} represents {@code -0.0f},
-     * or vice versa, the {@code equal} test has the value {@code false}, even though
-     * {@code 0.0f==-0.0f} has the value {@code true}.
-     * </ul>
-     * This definition allows hashtables to operate properly.
-     *
-     * @param obj the object to compare with, null returns false
-     * @return {@code true} if the objects are the same; {@code false} otherwise
-     * @see Float#floatToIntBits(float)
-     */
-    @Override
-    public boolean equals(final Object obj) {
-        return obj instanceof MutableFloat
-            && Float.floatToIntBits(((MutableFloat) obj).value) == Float.floatToIntBits(value);
-    }
-
-    /**
-     * Returns a suitable hash code for this mutable.
-     *
-     * @return a suitable hash code
-     */
-    @Override
-    public int hashCode() {
-        return Float.hashCode(value);
     }
 
     //-----------------------------------------------------------------------
