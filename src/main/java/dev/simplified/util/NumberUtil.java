@@ -1,7 +1,7 @@
 package dev.simplified.util;
 
-import lombok.SneakyThrows;
-import lombok.experimental.UtilityClass;
+import dev.simplified.annotations.SilentThrows;
+import dev.simplified.annotations.UtilityClass;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.Array;
@@ -329,7 +329,7 @@ public final class NumberUtil {
      * @param clazz the target number class
      * @return the converted number, or the default value if conversion fails
      */
-    @SneakyThrows
+    @SilentThrows
     public static <N extends Number> N to(Object value, Number defaultValue, Class<N> clazz) {
         String strValue = String.valueOf(value);
         String arg = isCreatable(strValue) ? new BigDecimal(strValue).toPlainString() : String.valueOf(defaultValue);

@@ -1,5 +1,6 @@
 package dev.simplified.util.mutable;
 
+import dev.simplified.annotations.EqualsAndHashCode;
 import dev.simplified.util.NumberUtil;
 
 /**
@@ -11,6 +12,7 @@ import dev.simplified.util.NumberUtil;
  *
  * @see Byte
  */
+@EqualsAndHashCode(identity = EqualsAndHashCode.Identity.INSTANCE_OF)
 public class MutableByte extends Number implements Comparable<MutableByte>, Mutable<Number> {
 
     /**
@@ -261,32 +263,6 @@ public class MutableByte extends Number implements Comparable<MutableByte>, Muta
      */
     public Byte toByte() {
         return byteValue();
-    }
-
-    /**
-     * Compares this object against the specified object. The result is {@code true} if and only if the argument
-     * is not {@code null} and is a {@code MutableByte} object that contains the same {@code byte} value
-     * as this object.
-     *
-     * @param obj the object to compare with, {@code null} returns {@code false}
-     * @return {@code true} if the objects are equal; {@code false} otherwise
-     */
-    @Override
-    public boolean equals(final Object obj) {
-        if (obj instanceof MutableByte) {
-            return value == ((MutableByte) obj).byteValue();
-        }
-        return false;
-    }
-
-    /**
-     * Returns a hash code for this mutable.
-     *
-     * @return the hash code of the stored value
-     */
-    @Override
-    public int hashCode() {
-        return Byte.hashCode(value);
     }
 
     /**

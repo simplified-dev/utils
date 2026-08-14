@@ -1,7 +1,7 @@
 package dev.simplified.util.compression;
 
+import dev.simplified.annotations.UtilityClass;
 import dev.simplified.util.compression.exception.CompressionException;
-import lombok.experimental.UtilityClass;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 

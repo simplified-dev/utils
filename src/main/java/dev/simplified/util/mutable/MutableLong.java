@@ -1,5 +1,6 @@
 package dev.simplified.util.mutable;
 
+import dev.simplified.annotations.EqualsAndHashCode;
 import dev.simplified.util.NumberUtil;
 
 /**
@@ -10,6 +11,7 @@ import dev.simplified.util.NumberUtil;
  *
  * @see Long
  */
+@EqualsAndHashCode(identity = EqualsAndHashCode.Identity.INSTANCE_OF)
 public class MutableLong extends Number implements Comparable<MutableLong>, Mutable<Number> {
 
     /**
@@ -254,32 +256,6 @@ public class MutableLong extends Number implements Comparable<MutableLong>, Muta
      */
     public Long toLong() {
         return longValue();
-    }
-
-    /**
-     * Compares this object against the specified object. The result is {@code true} if and only if the argument
-     * is not {@code null} and is a {@code MutableLong} object that contains the same {@code long}
-     * value as this object.
-     *
-     * @param obj the object to compare with, {@code null} returns {@code false}
-     * @return {@code true} if the objects are equal; {@code false} otherwise
-     */
-    @Override
-    public boolean equals(final Object obj) {
-        if (obj instanceof MutableLong) {
-            return value == ((MutableLong) obj).longValue();
-        }
-        return false;
-    }
-
-    /**
-     * Returns a hash code for this mutable.
-     *
-     * @return the hash code of the stored value
-     */
-    @Override
-    public int hashCode() {
-        return Long.hashCode(value);
     }
 
     /**

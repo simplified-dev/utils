@@ -1,15 +1,15 @@
 package dev.simplified.util;
 
+import dev.simplified.annotations.UtilityClass;
 import dev.simplified.util.mutable.MutableInt;
-import lombok.experimental.UtilityClass;
 
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.*;
+import java.util.Map.Entry;
+import java.util.Map;
 
 /**
  * A utility class for operations on arrays, primitive arrays (like {@code int[]}) and

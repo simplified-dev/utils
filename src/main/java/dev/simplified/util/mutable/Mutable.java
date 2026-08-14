@@ -1,13 +1,12 @@
 package dev.simplified.util.mutable;
 
-import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
-import lombok.experimental.Accessors;
+import dev.simplified.annotations.AllArgsConstructor;
+import dev.simplified.annotations.EqualsAndHashCode;
+import dev.simplified.annotations.NoArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.Serializable;
-import java.util.Objects;
 
 /**
  * A generic interface providing mutable access to a value.
@@ -62,7 +61,7 @@ public interface Mutable<T> {
      */
     @AllArgsConstructor
     @NoArgsConstructor
-    @Accessors(fluent = true)
+    @EqualsAndHashCode
     class Impl<T> implements Mutable<T>, Serializable {
 
         private @Nullable T value;
@@ -75,39 +74,6 @@ public interface Mutable<T> {
         @Override
         public void set(final T value) {
             this.value = value;
-        }
-
-        /**
-         * Compares this object against the specified object. The result is {@code true} if and only if the argument
-         * is not {@code null} and is an {@code Impl} object that contains an equal value.
-         *
-         * @param obj the object to compare with, {@code null} returns {@code false}
-         * @return {@code true} if the objects are equal; {@code false} otherwise
-         */
-        @Override
-        public boolean equals(final Object obj) {
-            if (obj == null)
-                return false;
-
-            if (this == obj)
-                return true;
-
-            if (this.getClass() == obj.getClass()) {
-                final Impl<?> that = (Impl<?>) obj;
-                return Objects.equals(this.value, that.value);
-            }
-
-            return false;
-        }
-
-        /**
-         * Returns the value's hash code, or {@code 0} if the value is {@code null}.
-         *
-         * @return the hash code of the stored value
-         */
-        @Override
-        public int hashCode() {
-            return this.value == null ? 0 : this.value.hashCode();
         }
 
         /**

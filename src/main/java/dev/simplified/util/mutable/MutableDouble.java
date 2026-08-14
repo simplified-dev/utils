@@ -1,5 +1,7 @@
 package dev.simplified.util.mutable;
 
+import dev.simplified.annotations.EqualsAndHashCode;
+
 /**
  * A mutable {@code double} wrapper.
  * <p>
@@ -8,6 +10,7 @@ package dev.simplified.util.mutable;
  *
  * @see Double
  */
+@EqualsAndHashCode(identity = EqualsAndHashCode.Identity.INSTANCE_OF)
 public class MutableDouble extends Number implements Comparable<MutableDouble>, Mutable<Number> {
 
     /**
@@ -270,49 +273,6 @@ public class MutableDouble extends Number implements Comparable<MutableDouble>, 
      */
     public Double toDouble() {
         return doubleValue();
-    }
-
-    /**
-     * Compares this object against the specified object. The result is {@code true} if and only if the argument
-     * is not {@code null} and is a {@code MutableDouble} object that represents a double with the identical
-     * bit pattern to the bit pattern of the double represented by this object. For this purpose, two
-     * {@code double} values are considered to be the same if and only if the method
-     * {@link Double#doubleToLongBits(double)} returns the same long value when applied to each.
-     * <p>
-     * Note that in most cases, for two instances of class {@code MutableDouble}, {@code d1} and {@code d2},
-     * the value of {@code d1.equals(d2)} is {@code true} if and only if
-     *
-     * <pre>
-     *   d1.doubleValue() == d2.doubleValue()
-     * </pre>
-     * <p>
-     * also has the value {@code true}. However, there are two exceptions:
-     * <ul>
-     * <li>If {@code d1} and {@code d2} both represent {@code Double.NaN}, then the
-     * {@code equals} method returns {@code true}, even though {@code Double.NaN==Double.NaN} has
-     * the value {@code false}.
-     * <li>If {@code d1} represents {@code +0.0} while {@code d2} represents {@code -0.0},
-     * or vice versa, the {@code equals} test has the value {@code false}, even though
-     * {@code +0.0==-0.0} has the value {@code true}. This allows hash tables to operate properly.
-     * </ul>
-     *
-     * @param obj the object to compare with, {@code null} returns {@code false}
-     * @return {@code true} if the objects are equal; {@code false} otherwise
-     */
-    @Override
-    public boolean equals(final Object obj) {
-        return obj instanceof MutableDouble
-            && Double.doubleToLongBits(((MutableDouble) obj).value) == Double.doubleToLongBits(value);
-    }
-
-    /**
-     * Returns a hash code for this mutable.
-     *
-     * @return the hash code of the stored value
-     */
-    @Override
-    public int hashCode() {
-        return Double.hashCode(value);
     }
 
     /**
