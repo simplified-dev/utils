@@ -58,6 +58,13 @@ class PossibleTest {
     }
 
     @Test
+    @DisplayName("map takes the one type argument Optional's does, so code written against Optional compiles")
+    void mapMatchesOptionalsSignature() {
+        Possible<Number> widened = Possible.of("x").<Number>map(String::length);
+        assertThat(widened.get().intValue(), is(1));
+    }
+
+    @Test
     @DisplayName("orAbsent answers for absence alone and leaves an empty one empty")
     void orAbsentIsSelective() {
         assertThat(Possible.absent().orAbsent(() -> Possible.of("sub")).orElse(null), is("sub"));

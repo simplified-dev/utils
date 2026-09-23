@@ -325,12 +325,11 @@ public final class Possible<T> {
      *
      * @param mapper the mapping function to apply to the value, if present
      * @param <U> the type of the value returned from the mapping function
-     * @param <R> the widened result type
      * @return a {@code Possible} describing the mapped result, or this one's value-less state
      */
     @SuppressWarnings("unchecked")
-    public <U extends R, R> @NotNull Possible<R> map(@NotNull Function<? super T, ? extends U> mapper) {
-        if (this.value == null) return (Possible<R>) this;
+    public <U> @NotNull Possible<U> map(@NotNull Function<? super T, ? extends U> mapper) {
+        if (this.value == null) return (Possible<U>) this;
         return ofNullable(mapper.apply(this.value));
     }
 
