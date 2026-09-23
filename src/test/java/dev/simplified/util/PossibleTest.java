@@ -3,11 +3,13 @@ package dev.simplified.util;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.util.NoSuchElementException;
 import java.util.Optional;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * Coverage of the one thing {@link Possible} exists for: that the two value-less states are told
@@ -78,6 +80,13 @@ class PossibleTest {
         assertThat(Possible.absent().toOptional(), is(Optional.empty()));
         assertThat(Possible.ofOptional(Optional.empty()).isEmpty(), is(true));
         assertThat(Possible.ofOptional(Optional.of("x")).orElse(null), is("x"));
+    }
+
+    @Test
+    @DisplayName("get on a value-less Possible names which of the two states it was")
+    void getNamesTheState() {
+        assertThat(assertThrows(NoSuchElementException.class, () -> Possible.empty().get()).getMessage(), is("No value present"));
+        assertThat(assertThrows(NoSuchElementException.class, () -> Possible.absent().get()).getMessage(), is("Value absent"));
     }
 
 }

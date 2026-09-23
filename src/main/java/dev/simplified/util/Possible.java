@@ -190,7 +190,7 @@ public final class Possible<T> {
      */
     public @NotNull T get() {
         if (this.value == null)
-            throw new NoSuchElementException(this.state == State.ABSENT ? "No value absent" : "No value present");
+            throw new NoSuchElementException(this.state == State.ABSENT ? "Value absent" : "No value present");
 
         return this.value;
     }
