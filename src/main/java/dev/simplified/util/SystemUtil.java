@@ -4,10 +4,6 @@ import dev.simplified.annotations.Cleanup;
 import dev.simplified.annotations.Getter;
 import dev.simplified.annotations.SilentThrows;
 import dev.simplified.annotations.UtilityClass;
-import dev.simplified.collection.Concurrent;
-import dev.simplified.collection.ConcurrentList;
-import dev.simplified.collection.ConcurrentMap;
-import dev.simplified.collection.tuple.pair.Pair;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -20,6 +16,10 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Scanner;
@@ -217,7 +217,7 @@ public final class SystemUtil {
      * Unmodifiable map of environment variables merged from {@code .env} files and OS environment.
      */
     @Getter
-    private static @NotNull ConcurrentMap<String, String> env = loadEnvironmentVariables().toUnmodifiable();
+    private static @NotNull Map<String, String> env = Collections.unmodifiableMap(loadEnvironmentVariables());
 
     /**
      * Returns the Java home directory as a {@link File}.
@@ -313,8 +313,8 @@ public final class SystemUtil {
      * @param inputStream the input stream to read, or {@code null} to return an empty map
      * @return a mutable map of parsed environment variables
      */
-    private static @NotNull ConcurrentMap<String, String> readEnvironmentFile(@Nullable InputStream inputStream) {
-        ConcurrentMap<String, String> variables = Concurrent.newMap();
+    private static @NotNull Map<String, String> readEnvironmentFile(@Nullable InputStream inputStream) {
+        Map<String, String> variables = new HashMap<>();
 
         if (inputStream != null) {
             Scanner scanner = new Scanner(inputStream);
@@ -348,8 +348,8 @@ public final class SystemUtil {
      *
      * @return a mutable map of all resolved environment variables
      */
-    private static @NotNull ConcurrentMap<String, String> loadEnvironmentVariables() {
-        ConcurrentMap<String, String> variables = Concurrent.newMap();
+    private static @NotNull Map<String, String> loadEnvironmentVariables() {
+        Map<String, String> variables = new HashMap<>();
 
         // Load src/main/resources/.env
         try {
@@ -384,23 +384,6 @@ public final class SystemUtil {
     }
 
     /**
-     * Looks up a single environment variable by name (case-insensitive) and returns it as a
-     * key-value {@link Pair}.
-     *
-     * @param variableName the name of the environment variable
-     * @return a pair of the variable name and an optional containing its value
-     */
-    public static @NotNull Pair<String, Optional<String>> getEnvPair(@NotNull String variableName) {
-        return getEnv()
-            .entrySet()
-            .stream()
-            .filter(entry -> entry.getKey().equalsIgnoreCase(variableName))
-            .map(entry -> Pair.of(variableName, Optional.ofNullable(entry.getValue())))
-            .findFirst()
-            .orElse(Pair.of(variableName, Optional.empty()));
-    }
-
-    /**
      * Opens a classpath resource as an {@link InputStream}, stripping any leading
      * {@code "resources/"} or {@code "/"} prefix from the path.
      *
@@ -418,10 +401,11 @@ public final class SystemUtil {
      * from the directory's input stream.
      *
      * @param resourcePath the classpath-relative directory path
-     * @return a list of file names found under the resource path, or an empty list on failure
+     * @return an unmodifiable list of file names found under the resource path, or an empty list on
+     *         failure
      */
-    public static @NotNull ConcurrentList<String> getResourceFiles(@NotNull String resourcePath) {
-        ConcurrentList<String> fileNames = Concurrent.newList();
+    public static @NotNull List<String> getResourceFiles(@NotNull String resourcePath) {
+        List<String> fileNames = new ArrayList<>();
 
         try {
             resourcePath = RegexUtil.replaceFirst(resourcePath, "^resources/", "");
@@ -435,7 +419,7 @@ public final class SystemUtil {
             }
         } catch (IOException ignore) { }
 
-        return fileNames;
+        return Collections.unmodifiableList(fileNames);
     }
 
     /**
