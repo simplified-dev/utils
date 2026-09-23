@@ -1,6 +1,7 @@
 package dev.simplified.util;
 
 import dev.simplified.annotations.EqualsAndHashCode;
+import dev.simplified.annotations.Getter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -13,24 +14,30 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 /**
- * A container object which may contain a non-{@code null} value, or may carry one of two distinct
- * reasons for carrying none. If a value is present, {@link #isPresent()} returns {@code true}.
- * If no value is present, the object is either <i>empty</i> or <i>absent</i>, and those two are not
- * the same object, are not equal to one another, and are told apart by {@link #isEmpty()} and
- * {@link #isAbsent()}.
+ * A container object which may contain a non-{@code null} value, and which tells apart two ways of
+ * holding none. It is {@link Optional} with one more state: every method the two share answers
+ * exactly as {@link Optional} would, and the extra state is reached only through methods
+ * {@link Optional} does not have.
  * <p>
- * <i>Empty</i> means the question was well-formed and the answer is genuinely nothing.
- * <i>Absent</i> means there was nothing to ask about, so no answer exists to give. A map lookup is
- * the clearest case of the difference: a key bound to nothing answers empty, and a key that is not in
- * the map at all answers absent, where {@link Optional} collapses both onto
- * {@link Optional#empty()} and leaves the caller to recover the difference by asking a second
- * question.
+ * The three states, as {@link #getState()} reports them:
+ * <ul>
+ *     <li><b>{@link State#PRESENT present}</b> - the container exists and holds a value</li>
+ *     <li><b>{@link State#EMPTY empty}</b> - the container exists and holds nothing: zero elements,
+ *     or a {@code null}</li>
+ *     <li><b>{@link State#ABSENT absent}</b> - there is no container at all; the value is
+ *     structurally missing</li>
+ * </ul>
  * <p>
- * Additional methods that depend on which of the three states holds are provided, such as
- * {@link #orElse(Object) orElse()} (returns a default value if no value is present),
- * {@link #ifPresent(Consumer) ifPresent()} (performs an action if a value is present), and
- * {@link #orAbsent(Supplier) orAbsent()} (substitutes only for the absent state, leaving an empty
- * one empty).
+ * Absent is the stronger form of empty, so {@link #isEmpty()} answers {@code true} for both - as
+ * {@link Optional#isEmpty()} does for the {@link Optional} each converts to - and
+ * {@link #isAbsent()} singles out the stronger one. A map lookup is the clearest case: a key bound to
+ * {@code null} answers empty, and a key the map does not hold answers absent, where {@link Optional}
+ * collapses both onto {@link Optional#empty()} and leaves the caller to ask a second question.
+ * <p>
+ * Code written against {@link Optional} therefore keeps its meaning when the type is replaced, and an
+ * absent value reaching it is treated as the empty one it also is. A caller that needs all three
+ * states switches over {@link #getState()} in a switch <i>expression</i>, which the compiler checks
+ * for exhaustiveness; a switch statement over an enum is not checked.
  *
  * @apiNote
  * {@code Possible} is primarily intended for use as a method return type where "no result" has more
@@ -40,11 +47,9 @@ import java.util.stream.Stream;
  * instance.
  *
  * @apiNote
- * <b>{@link #isEmpty()} is not the negation of {@link #isPresent()}</b>, which is the one place this
- * type does not behave like {@link Optional}. It answers {@code true} for the empty state alone, so
- * code translated from {@code Optional} by replacing the type keeps compiling and stops handling the
- * absent state. {@link #isMissing()} is the negation, and is what a caller that does not care why
- * should ask.
+ * {@link #equals(Object)} is the one shared method that does not follow {@link Optional}: an empty and
+ * an absent {@code Possible} are unequal, although both convert to {@link Optional#empty()}. Telling
+ * them apart is what the type is for.
  *
  * @param <T> the type of value
  */
@@ -65,6 +70,7 @@ public final class Possible<T> {
      * Which of the three states this instance holds. It is compared, so an empty and an absent
      * instance are unequal despite both carrying no value.
      */
+    @Getter
     private final @NotNull State state;
 
     /**
@@ -78,17 +84,17 @@ public final class Possible<T> {
     }
 
     /**
-     * Which of the three things a {@code Possible} can be.
+     * The three states a {@code Possible} can be in, from holding a value to having no container.
      */
-    private enum State {
+    public enum State {
 
-        /** A value is present. */
+        /** The container exists and holds a value. */
         PRESENT,
 
-        /** No value is present, and the question was well-formed. */
+        /** The container exists and holds nothing - zero elements, or a {@code null}. */
         EMPTY,
 
-        /** No value is present, because there was nothing to ask about. */
+        /** There is no container, and the value is structurally missing - the stronger form of empty. */
         ABSENT
 
     }
@@ -96,8 +102,8 @@ public final class Possible<T> {
     // Create
 
     /**
-     * Returns an empty {@code Possible} instance. No value is present, and the reason is that the
-     * answer is genuinely nothing.
+     * Returns an empty {@code Possible} instance. No value is present, and the container exists but
+     * holds nothing.
      *
      * @apiNote
      * Avoid testing emptiness by comparing with {@code ==} against instances returned by
@@ -113,8 +119,8 @@ public final class Possible<T> {
     }
 
     /**
-     * Returns an absent {@code Possible} instance. No value is present, and the reason is that there
-     * was nothing to ask about.
+     * Returns an absent {@code Possible} instance. No value is present, and there is no container to
+     * hold one.
      *
      * @apiNote
      * Avoid testing absence by comparing with {@code ==} against instances returned by
@@ -149,9 +155,9 @@ public final class Possible<T> {
      * {@code null}.
      *
      * @apiNote
-     * The {@code null} maps to empty rather than absent, because a {@code null} says the answer was
-     * nothing and says nothing about whether there was a question. A caller that means absent says so
-     * with {@link #absent()}.
+     * The {@code null} maps to empty rather than absent, because a {@code null} is something held that
+     * holds nothing, and says nothing about whether a container was missing. A caller that means
+     * absent says so with {@link #absent()}.
      *
      * @param value the possibly-{@code null} value to describe
      * @param <T> the type of the value
@@ -169,7 +175,8 @@ public final class Possible<T> {
      * @apiNote
      * An empty {@link Optional} maps to empty rather than absent, which is the faithful reading:
      * {@link Optional} cannot express absence, so it never carries one to recover. A caller who knows
-     * the empty meant absence converts it with {@code orEmpty(Possible::absent)}.
+     * the empty meant absence converts it with {@code or(Possible::absent)}, since the result is never
+     * absent to begin with.
      *
      * @param value a non-null {@code Optional} that may or may not contain a value
      * @param <T> the type of the value
@@ -207,37 +214,27 @@ public final class Possible<T> {
     }
 
     /**
-     * Returns {@code true} if no value is present and the answer is genuinely nothing, otherwise
-     * {@code false}.
+     * Returns {@code true} if no value is present, otherwise {@code false}. An absent
+     * {@code Possible} is empty too - absent is the stronger form - so this answers as
+     * {@link Optional#isEmpty()} does.
      *
-     * @apiNote
-     * This answers {@code false} for an absent {@code Possible}, unlike {@link Optional#isEmpty()},
-     * which answers for every value-less state. {@link #isMissing()} is the one that behaves the way
-     * {@code Optional} does.
-     *
-     * @return {@code true} if this is empty, otherwise {@code false}
+     * @return {@code true} if no value is present, otherwise {@code false}
      */
     public boolean isEmpty() {
-        return this.state == State.EMPTY;
+        return this.state != State.PRESENT;
     }
 
     /**
-     * Returns {@code true} if no value is present because there was nothing to ask about, otherwise
-     * {@code false}.
+     * Returns {@code true} if there is no container at all, otherwise {@code false}.
+     *
+     * @apiNote
+     * An absent {@code Possible} is also empty. {@code getState() == State.EMPTY} is what singles out
+     * one that is empty and not absent.
      *
      * @return {@code true} if this is absent, otherwise {@code false}
      */
     public boolean isAbsent() {
         return this.state == State.ABSENT;
-    }
-
-    /**
-     * Returns {@code true} if no value is present, for either reason, otherwise {@code false}.
-     *
-     * @return {@code true} if this is empty or absent, otherwise {@code false}
-     */
-    public boolean isMissing() {
-        return this.state != State.PRESENT;
     }
 
     // IfPresent
@@ -254,43 +251,16 @@ public final class Possible<T> {
 
     /**
      * If a value is present, performs the given action with the value, otherwise performs the given
-     * missing-based action.
+     * empty-based action.
      *
      * @param action the action to be performed if a value is present
-     * @param missingAction the action to be performed if no value is present, for either reason
+     * @param emptyAction the action to be performed if no value is present, absent included
      */
-    public void ifPresentOrElse(@NotNull Consumer<? super T> action, @NotNull Runnable missingAction) {
+    public void ifPresentOrElse(@NotNull Consumer<? super T> action, @NotNull Runnable emptyAction) {
         if (this.value != null)
             action.accept(this.value);
         else
-            missingAction.run();
-    }
-
-    /**
-     * If a value is present, performs the given action with the value, otherwise performs whichever
-     * of the two value-less actions matches this instance's reason.
-     *
-     * @param action the action to be performed if a value is present
-     * @param emptyAction the action to be performed if this is empty
-     * @param absentAction the action to be performed if this is absent
-     */
-    public void ifPresentOrElse(
-        @NotNull Consumer<? super T> action, @NotNull Runnable emptyAction, @NotNull Runnable absentAction) {
-        switch (this.state) {
-            case PRESENT -> action.accept(this.value);
-            case EMPTY -> emptyAction.run();
-            case ABSENT -> absentAction.run();
-        }
-    }
-
-    /**
-     * If this is absent, performs the given action, otherwise does nothing.
-     *
-     * @param action the action to be performed if this is absent
-     */
-    public void ifAbsent(@NotNull Runnable action) {
-        if (this.state == State.ABSENT)
-            action.run();
+            emptyAction.run();
     }
 
     // Filter
@@ -301,8 +271,8 @@ public final class Possible<T> {
      * so filtering never turns an absent one into an empty one.
      *
      * @apiNote
-     * A present value the predicate rejects yields empty rather than absent, because the value was
-     * there to test - the question was well-formed and the answer, after filtering, is nothing.
+     * A present value the predicate rejects yields empty rather than absent, because the container
+     * existed and held a value to test - after filtering it holds nothing.
      *
      * @param predicate the predicate to apply to the value, if present
      * @return this {@code Possible} if a value is present and matches, otherwise empty
@@ -382,18 +352,6 @@ public final class Possible<T> {
     @SuppressWarnings("unchecked")
     public @NotNull Possible<T> orAbsent(@NotNull Supplier<? extends Possible<? extends T>> supplier) {
         return this.state == State.ABSENT ? (Possible<T>) supplier.get() : this;
-    }
-
-    /**
-     * If this is empty, returns the {@code Possible} produced by the supplying function, otherwise
-     * returns this {@code Possible}. A present one and an absent one are both returned as they are.
-     *
-     * @param supplier a function that produces a fallback {@code Possible} for the empty state
-     * @return the result of {@code supplier} if this is empty, otherwise this {@code Possible}
-     */
-    @SuppressWarnings("unchecked")
-    public @NotNull Possible<T> orEmpty(@NotNull Supplier<? extends Possible<? extends T>> supplier) {
-        return this.state == State.EMPTY ? (Possible<T>) supplier.get() : this;
     }
 
     // OrElse
