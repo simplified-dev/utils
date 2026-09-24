@@ -340,25 +340,22 @@ public final class SystemUtil {
     }
 
     /**
-     * Returns the directory that holds the code source this class was loaded from: the directory
-     * containing the jar that carries {@code SystemUtil}, or the parent of the class directory when
-     * it was loaded from one. This is not the process working directory, which
-     * {@link #getUserDir()} answers.
+     * Returns the process working directory - the directory the application was started from, which
+     * the {@code user.dir} system property names - as an absolute file.
      *
-     * @return the parent directory of this class's code source location
-     * @throws IllegalArgumentException if the code source location is not a {@code file:} URI naming
-     *         a local path, as a {@code jar:} URI or a network-share one is not
+     * @return the absolute working directory
+     * @throws SecurityException if a security manager prevents access to the system property
+     * @see #getUserDir()
      */
-    @SilentThrows
     public static @NotNull File getCurrentDirectory() {
-        return new File(SystemUtil.class.getProtectionDomain().getCodeSource().getLocation().toURI()).getParentFile();
+        return getUserDir().getAbsoluteFile();
     }
 
     /**
      * Builds the environment map from three sources, each laid over the ones before it: the
      * resource {@code ../.env} opened through {@link #getResource(String)}, the {@code .env} file in
-     * {@link #getCurrentDirectory()} - beside the jar or class directory this class was loaded from,
-     * not the process working directory - and the OS environment from {@link System#getenv()}.
+     * {@link #getCurrentDirectory()} - the process working directory - and the OS environment from
+     * {@link System#getenv()}.
      *
      * <p>A later source replaces an earlier entry only where the key matches exactly, case
      * included, and a source that is missing or cannot be opened adds nothing. The JDK's class-path
@@ -377,8 +374,7 @@ public final class SystemUtil {
             variables.putAll(readEnvironmentFile(resourceFile));
         } catch (Exception ignore) { }
 
-        // The ".env" file in getCurrentDirectory(), beside the jar or class directory this class
-        // was loaded from rather than in the process working directory
+        // The ".env" file in getCurrentDirectory(), the process working directory
         try {
             @Cleanup InputStream localFile = new FileInputStream(getCurrentDirectory() + FILE_SEPARATOR + ".env");
             variables.putAll(readEnvironmentFile(localFile));
