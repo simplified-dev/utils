@@ -16,6 +16,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.security.CodeSource;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -214,12 +215,18 @@ public final class SystemUtil {
     public static final String USER_TIMEZONE = getSystemProperty("user.timezone");
 
     /**
-     * Unmodifiable map of the OS environment laid over the variables of two {@code .env} sources -
-     * the resource {@code ../.env} and the {@code .env} file in {@link #getCurrentDirectory()} -
-     * built once when the class initializes, so a file written later is not read.
+     * Unmodifiable map of every variable read from three sources, each laid over the ones before it
+     * where a key matches exactly: the {@code .env} file in the directory of the application's
+     * entry point - beside the jar started with {@code -jar}, or above the main class's jar or class
+     * directory - then the {@code .env} file in {@link #getCurrentDirectory()}, the process working
+     * directory, then the OS environment from {@link System#getenv()}.
+     *
+     * <p>The two files are one read when the directories are the same, and a missing or unreadable
+     * file adds nothing. The map is built once when the class initializes, so a file written later
+     * is not read.
      */
     @Getter
-    private static @NotNull Map<String, String> env = Collections.unmodifiableMap(loadEnvironmentVariables());
+    private static @NotNull Map<String, String> env = Collections.unmodifiableMap(loadEnvironmentVariables(getEnvironmentDirectories(), System.getenv()));
 
     /**
      * Returns the Java home directory as a {@link File}.
@@ -352,36 +359,84 @@ public final class SystemUtil {
     }
 
     /**
-     * Builds the environment map from three sources, each laid over the ones before it: the
-     * resource {@code ../.env} opened through {@link #getResource(String)}, the {@code .env} file in
-     * {@link #getCurrentDirectory()} - the process working directory - and the OS environment from
-     * {@link System#getenv()}.
+     * Finds the directory holding the application's entry point from the {@code sun.java.command}
+     * and {@code java.class.path} values the launcher records.
+     *
+     * <p>A jar started with {@code -jar} is the whole class path and also the start of the command,
+     * so a command that is the class path, alone or followed by a space, names that jar when it is a
+     * file, and the answer is the directory holding it. Otherwise the first word of the command is
+     * the main class, found through the system class loader without initializing it, and the
+     * answer is the parent of the location it was loaded from - the directory holding its jar, or
+     * the one above its class directory.
+     *
+     * @param command the {@code sun.java.command} value, or {@code null} when the launcher set none
+     * @param classPath the {@code java.class.path} value, or {@code null} when it cannot be read
+     * @return the entry point's directory, or {@code null} when there is no command, its main class
+     *         cannot be found, or that class was not loaded from a local file
+     */
+    static @Nullable File getEntryPointDirectory(@Nullable String command, @Nullable String classPath) {
+        if (StringUtil.isEmpty(command))
+            return null;
+
+        if (StringUtil.isNotEmpty(classPath) && (command.equals(classPath) || command.startsWith(classPath + " ")) && new File(classPath).isFile())
+            return new File(classPath).getAbsoluteFile().getParentFile();
+
+        try {
+            CodeSource codeSource = Class.forName(command.split(" ", 2)[0], false, ClassLoader.getSystemClassLoader())
+                .getProtectionDomain()
+                .getCodeSource();
+
+            return codeSource != null ? new File(codeSource.getLocation().toURI()).getParentFile() : null;
+        } catch (Exception | LinkageError ignore) {
+            return null;
+        }
+    }
+
+    /**
+     * Lists the directories whose {@code .env} file the environment map reads, earliest first: the
+     * directory of the application's entry point when {@link #getEntryPointDirectory(String, String)}
+     * finds one, then {@link #getCurrentDirectory()} unless it is that same directory.
+     *
+     * @return the directories to read, each laid over the ones before it
+     */
+    private static @NotNull List<File> getEnvironmentDirectories() {
+        List<File> directories = new ArrayList<>();
+        File entryPointDirectory = getEntryPointDirectory(getSystemProperty("sun.java.command"), JAVA_CLASS_PATH);
+
+        if (entryPointDirectory != null)
+            directories.add(entryPointDirectory);
+
+        try {
+            File currentDirectory = getCurrentDirectory();
+
+            if (!currentDirectory.equals(entryPointDirectory))
+                directories.add(currentDirectory);
+        } catch (SecurityException ignore) { }
+
+        return directories;
+    }
+
+    /**
+     * Builds an environment map from the {@code .env} file in each of the given directories, each
+     * laid over the ones before it, with the given environment laid over them all.
      *
      * <p>A later source replaces an earlier entry only where the key matches exactly, case
-     * included, and a source that is missing or cannot be opened adds nothing. The JDK's class-path
-     * loaders refuse a resource name that climbs above a class-path root, so under them the first
-     * source is always empty.
+     * included, and a directory whose {@code .env} file is missing or cannot be read adds nothing.
      *
+     * @param directories the directories whose {@code .env} file is read, earliest first
+     * @param environment the variables laid over every file
      * @return a mutable map of every variable read
      */
-    private static @NotNull Map<String, String> loadEnvironmentVariables() {
+    static @NotNull Map<String, String> loadEnvironmentVariables(@NotNull List<File> directories, @NotNull Map<String, String> environment) {
         Map<String, String> variables = new HashMap<>();
 
-        // The resource "../.env" through getResource; the JDK's class-path loaders refuse a name
-        // that climbs above a class-path root, so under them this reads nothing
-        try {
-            @Cleanup InputStream resourceFile = getResource("../.env");
-            variables.putAll(readEnvironmentFile(resourceFile));
-        } catch (Exception ignore) { }
+        for (File directory : directories) {
+            try (InputStream file = new FileInputStream(new File(directory, ".env"))) {
+                variables.putAll(readEnvironmentFile(file));
+            } catch (Exception ignore) { }
+        }
 
-        // The ".env" file in getCurrentDirectory(), the process working directory
-        try {
-            @Cleanup InputStream localFile = new FileInputStream(getCurrentDirectory() + FILE_SEPARATOR + ".env");
-            variables.putAll(readEnvironmentFile(localFile));
-        } catch (Exception ignore) { }
-
-        // The OS environment, laid over both .env sources
-        variables.putAll(System.getenv());
+        variables.putAll(environment);
         return variables;
     }
 
