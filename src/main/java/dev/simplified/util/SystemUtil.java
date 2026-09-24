@@ -214,7 +214,9 @@ public final class SystemUtil {
     public static final String USER_TIMEZONE = getSystemProperty("user.timezone");
 
     /**
-     * Unmodifiable map of environment variables merged from {@code .env} files and OS environment.
+     * Unmodifiable map of the OS environment laid over the variables of two {@code .env} sources -
+     * the resource {@code ../.env} and the {@code .env} file in {@link #getCurrentDirectory()} -
+     * built once when the class initializes, so a file written later is not read.
      */
     @Getter
     private static @NotNull Map<String, String> env = Collections.unmodifiableMap(loadEnvironmentVariables());
@@ -308,10 +310,15 @@ public final class SystemUtil {
     }
 
     /**
-     * Parses key-value pairs from the given {@code .env}-formatted input stream.
+     * Parses the lines of the given stream that contain {@code =} into a map, splitting each at its
+     * first {@code =} into a key and a value.
      *
-     * @param inputStream the input stream to read, or {@code null} to return an empty map
-     * @return a mutable map of parsed environment variables
+     * <p>Both halves are kept verbatim - nothing is trimmed, unquoted or treated as a comment - and
+     * a line without {@code =} is skipped. A later line replaces an earlier one with the same key.
+     * The stream is decoded with the default charset and is not closed here.
+     *
+     * @param inputStream the stream to read, or {@code null} for none
+     * @return a mutable map of the parsed variables, empty when {@code inputStream} is {@code null}
      */
     private static @NotNull Map<String, String> readEnvironmentFile(@Nullable InputStream inputStream) {
         Map<String, String> variables = new HashMap<>();
@@ -333,9 +340,14 @@ public final class SystemUtil {
     }
 
     /**
-     * Returns the directory containing the running application's JAR or class files.
+     * Returns the directory that holds the code source this class was loaded from: the directory
+     * containing the jar that carries {@code SystemUtil}, or the parent of the class directory when
+     * it was loaded from one. This is not the process working directory, which
+     * {@link #getUserDir()} answers.
      *
      * @return the parent directory of this class's code source location
+     * @throws IllegalArgumentException if the code source location is not a {@code file:} URI naming
+     *         a local path, as a {@code jar:} URI or a network-share one is not
      */
     @SilentThrows
     public static @NotNull File getCurrentDirectory() {
@@ -343,36 +355,52 @@ public final class SystemUtil {
     }
 
     /**
-     * Loads environment variables by merging {@code .env} files from the classpath and working
-     * directory, then overlaying the OS environment.
+     * Builds the environment map from three sources, each laid over the ones before it: the
+     * resource {@code ../.env} opened through {@link #getResource(String)}, the {@code .env} file in
+     * {@link #getCurrentDirectory()} - beside the jar or class directory this class was loaded from,
+     * not the process working directory - and the OS environment from {@link System#getenv()}.
      *
-     * @return a mutable map of all resolved environment variables
+     * <p>A later source replaces an earlier entry only where the key matches exactly, case
+     * included, and a source that is missing or cannot be opened adds nothing. The JDK's class-path
+     * loaders refuse a resource name that climbs above a class-path root, so under them the first
+     * source is always empty.
+     *
+     * @return a mutable map of every variable read
      */
     private static @NotNull Map<String, String> loadEnvironmentVariables() {
         Map<String, String> variables = new HashMap<>();
 
-        // Load src/main/resources/.env
+        // The resource "../.env" through getResource; the JDK's class-path loaders refuse a name
+        // that climbs above a class-path root, so under them this reads nothing
         try {
             @Cleanup InputStream resourceFile = getResource("../.env");
             variables.putAll(readEnvironmentFile(resourceFile));
         } catch (Exception ignore) { }
 
-        // Load <working directory>/.env
+        // The ".env" file in getCurrentDirectory(), beside the jar or class directory this class
+        // was loaded from rather than in the process working directory
         try {
             @Cleanup InputStream localFile = new FileInputStream(getCurrentDirectory() + FILE_SEPARATOR + ".env");
             variables.putAll(readEnvironmentFile(localFile));
         } catch (Exception ignore) { }
 
-        // Override From OS
+        // The OS environment, laid over both .env sources
         variables.putAll(System.getenv());
         return variables;
     }
 
     /**
-     * Looks up a single environment variable by name (case-insensitive).
+     * Looks up an environment variable in the map {@code getEnv()} answers, matching the name
+     * case-insensitively.
      *
-     * @param variableName the name of the environment variable
-     * @return an optional containing the value if found, or empty otherwise
+     * <p>Keys are compared with {@link String#equalsIgnoreCase(String)} in the map's iteration
+     * order and the first match answers, with no preference for an exact-case match. That order is
+     * a hash map's, so when two keys differ only in case - a {@code .env} entry {@code db_url} beside
+     * the OS variable {@code DB_URL}, for instance - which of their values is returned is
+     * unspecified.
+     *
+     * @param variableName the name of the variable, matched ignoring case
+     * @return the value of the first key matching the name, or empty if none matches
      */
     public static @NotNull Optional<String> getEnv(@NotNull String variableName) {
         return getEnv()
@@ -384,8 +412,12 @@ public final class SystemUtil {
     }
 
     /**
-     * Opens a classpath resource as an {@link InputStream}, stripping any leading
-     * {@code "resources/"} or {@code "/"} prefix from the path.
+     * Opens a resource as an {@link InputStream} through the current thread's context class
+     * loader, or through the class loader of {@code SystemUtil} when the thread has none.
+     *
+     * <p>A leading {@code resources/} is removed from the path and then a leading {@code /}, so
+     * {@code resources/a.txt} and {@code /a.txt} both open {@code a.txt}; any other path reaches the
+     * class loader unchanged.
      *
      * @param resourcePath the classpath-relative resource path
      * @return an input stream for the resource, or {@code null} if not found
