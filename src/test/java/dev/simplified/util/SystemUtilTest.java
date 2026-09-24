@@ -13,21 +13,26 @@ import java.net.URLClassLoader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
+import java.util.TreeSet;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.anEmptyMap;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
- * Coverage of where {@link SystemUtil} finds the directories and variables it answers, held apart
- * from this machine's own environment.
+ * Coverage of where {@link SystemUtil} finds the directories and variables it answers, independent
+ * of what this machine's own environment holds.
  */
 @DisplayName("SystemUtil reads its environment from where the application runs")
 class SystemUtilTest {
@@ -88,19 +93,31 @@ class SystemUtilTest {
     }
 
     @Test
-    @DisplayName("no class-path resource contributes, even under a loader that answers ../.env")
-    void noResourceContributes() {
+    @DisplayName("the initialized map is the working directory's .env under the OS environment, and no class-path resource contributes")
+    void initializedMapReadsOnlyItsSources(@TempDir Path workingDirectory) throws Exception {
+        String shadowed = System.getenv()
+            .keySet()
+            .stream()
+            .filter(key -> key.matches("[A-Za-z_][A-Za-z0-9_]*"))
+            .min(Comparator.naturalOrder())
+            .orElse(null);
+        assumeTrue(shadowed != null, "the environment holds no variable a .env entry can share a key with");
+        writeEnv(workingDirectory, "SYSTEM_UTIL_TEST_WORKING_DIRECTORY=working", shadowed + "=file");
+
+        Map<String, String> expected = new HashMap<>(Map.of("SYSTEM_UTIL_TEST_WORKING_DIRECTORY", "working", shadowed, "file"));
+        expected.putAll(System.getenv());
+
         Thread thread = Thread.currentThread();
         ClassLoader original = thread.getContextClassLoader();
         thread.setContextClassLoader(new ClassLoader(original) {
             @Override
             public InputStream getResourceAsStream(String name) {
-                return new ByteArrayInputStream("RESOURCE=resource".getBytes(StandardCharsets.UTF_8));
+                return new ByteArrayInputStream("SYSTEM_UTIL_TEST_RESOURCE=resource".getBytes(StandardCharsets.UTF_8));
             }
         });
 
         try {
-            assertThat(SystemUtil.loadEnvironmentVariables(null, Map.of()), is(anEmptyMap()));
+            assertThat(differingKeys(initializeFresh(Map.of("user.dir", workingDirectory.toString())), expected), is(empty()));
         } finally {
             thread.setContextClassLoader(original);
         }
@@ -161,6 +178,21 @@ class SystemUtilTest {
             reversed.put(keysAndValues[i], keysAndValues[i + 1]);
 
         return List.of(forward, reversed);
+    }
+
+    /**
+     * Lists the keys whose values differ between two maps, a key held by one map only included, so
+     * a failed comparison of environment maps names variables without printing their values.
+     *
+     * @param actual the map under test
+     * @param expected the map it should equal
+     * @return the differing keys in natural order
+     */
+    private static Set<String> differingKeys(Map<String, String> actual, Map<String, String> expected) {
+        Set<String> keys = new TreeSet<>(actual.keySet());
+        keys.addAll(expected.keySet());
+        keys.removeIf(key -> Objects.equals(actual.get(key), expected.get(key)));
+        return keys;
     }
 
     /**
