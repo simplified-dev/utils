@@ -214,12 +214,20 @@ public final class SystemUtil {
     public static final String USER_TIMEZONE = getSystemProperty("user.timezone");
 
     /**
-     * Unmodifiable map of the OS environment laid over the variables of two {@code .env} sources -
-     * the resource {@code ../.env} and the {@code .env} file in {@link #getCurrentDirectory()} -
-     * built once when the class initializes, so a file written later is not read.
+     * Unmodifiable map of every variable read from two sources, the second laid over the first where
+     * a key matches exactly: the {@code .env} file in {@link #getCurrentDirectory()}, the process
+     * working directory, then the OS environment from {@link System#getenv()}.
+     *
+     * <p>No {@code .env} is read from the class path or from beside any jar, so a deployment keeps
+     * its file in the directory it starts the application from. Under a launcher script such as a
+     * Gradle distribution's that is the directory the script is run from, not its {@code lib/}
+     * directory, and under Gradle's {@code test} task it is the directory of the project under test.
+     *
+     * <p>A missing or unreadable file adds nothing. The map is built once when the class
+     * initializes, so a file written later is not read.
      */
     @Getter
-    private static @NotNull Map<String, String> env = Collections.unmodifiableMap(loadEnvironmentVariables());
+    private static @NotNull Map<String, String> env = Collections.unmodifiableMap(loadEnvironmentVariables(USER_DIR != null ? getCurrentDirectory() : null, System.getenv()));
 
     /**
      * Returns the Java home directory as a {@link File}.
@@ -340,75 +348,79 @@ public final class SystemUtil {
     }
 
     /**
-     * Returns the directory that holds the code source this class was loaded from: the directory
-     * containing the jar that carries {@code SystemUtil}, or the parent of the class directory when
-     * it was loaded from one. This is not the process working directory, which
-     * {@link #getUserDir()} answers.
+     * Returns the process working directory - the directory the application was started from, which
+     * the {@code user.dir} system property names - as an absolute file.
      *
-     * @return the parent directory of this class's code source location
-     * @throws IllegalArgumentException if the code source location is not a {@code file:} URI naming
-     *         a local path, as a {@code jar:} URI or a network-share one is not
+     * @return the absolute working directory
+     * @throws SecurityException if a security manager prevents access to the system property
+     * @see #getUserDir()
      */
-    @SilentThrows
     public static @NotNull File getCurrentDirectory() {
-        return new File(SystemUtil.class.getProtectionDomain().getCodeSource().getLocation().toURI()).getParentFile();
+        return getUserDir().getAbsoluteFile();
     }
 
     /**
-     * Builds the environment map from three sources, each laid over the ones before it: the
-     * resource {@code ../.env} opened through {@link #getResource(String)}, the {@code .env} file in
-     * {@link #getCurrentDirectory()} - beside the jar or class directory this class was loaded from,
-     * not the process working directory - and the OS environment from {@link System#getenv()}.
+     * Builds an environment map from the {@code .env} file in the given directory with the given
+     * environment laid over it, an entry of the file replaced only where a key matches exactly, case
+     * included.
      *
-     * <p>A later source replaces an earlier entry only where the key matches exactly, case
-     * included, and a source that is missing or cannot be opened adds nothing. The JDK's class-path
-     * loaders refuse a resource name that climbs above a class-path root, so under them the first
-     * source is always empty.
+     * <p>A missing or unreadable file, or no directory at all, adds nothing.
      *
+     * @param directory the directory whose {@code .env} file is read, or {@code null} for none
+     * @param environment the variables laid over the file
      * @return a mutable map of every variable read
      */
-    private static @NotNull Map<String, String> loadEnvironmentVariables() {
+    static @NotNull Map<String, String> loadEnvironmentVariables(@Nullable File directory, @NotNull Map<String, String> environment) {
         Map<String, String> variables = new HashMap<>();
 
-        // The resource "../.env" through getResource; the JDK's class-path loaders refuse a name
-        // that climbs above a class-path root, so under them this reads nothing
-        try {
-            @Cleanup InputStream resourceFile = getResource("../.env");
-            variables.putAll(readEnvironmentFile(resourceFile));
-        } catch (Exception ignore) { }
+        if (directory != null) {
+            try (InputStream file = new FileInputStream(new File(directory, ".env"))) {
+                variables.putAll(readEnvironmentFile(file));
+            } catch (Exception ignore) { }
+        }
 
-        // The ".env" file in getCurrentDirectory(), beside the jar or class directory this class
-        // was loaded from rather than in the process working directory
-        try {
-            @Cleanup InputStream localFile = new FileInputStream(getCurrentDirectory() + FILE_SEPARATOR + ".env");
-            variables.putAll(readEnvironmentFile(localFile));
-        } catch (Exception ignore) { }
-
-        // The OS environment, laid over both .env sources
-        variables.putAll(System.getenv());
+        variables.putAll(environment);
         return variables;
     }
 
     /**
-     * Looks up an environment variable in the map {@code getEnv()} answers, matching the name
-     * case-insensitively.
+     * Looks up an environment variable in the map {@code getEnv()} answers, preferring the name as
+     * spelled and falling back to a match that ignores case.
      *
-     * <p>Keys are compared with {@link String#equalsIgnoreCase(String)} in the map's iteration
-     * order and the first match answers, with no preference for an exact-case match. That order is
-     * a hash map's, so when two keys differ only in case - a {@code .env} entry {@code db_url} beside
-     * the OS variable {@code DB_URL}, for instance - which of their values is returned is
-     * unspecified.
+     * <p>A key equal to the name, case included, always answers. Failing that, of the keys equal to
+     * it under {@link String#equalsIgnoreCase(String)}, the one first by
+     * {@link String#compareTo(String)} answers - for an ASCII name, the spelling with the upper-case
+     * letter where the spellings first differ. So beside a {@code .env} entry {@code db_url} and the
+     * OS variable {@code DB_URL}, {@code getEnv("db_url")} answers the entry's value and both
+     * {@code getEnv("DB_URL")} and {@code getEnv("Db_Url")} answer the variable's.
      *
-     * @param variableName the name of the variable, matched ignoring case
-     * @return the value of the first key matching the name, or empty if none matches
+     * @param variableName the name of the variable, matched exactly first and then ignoring case
+     * @return the value of the matching key, or empty if no key matches the name in any case
      */
     public static @NotNull Optional<String> getEnv(@NotNull String variableName) {
-        return getEnv()
-            .entrySet()
+        return findEnv(getEnv(), variableName);
+    }
+
+    /**
+     * Looks up a variable in the given map by the rule {@link #getEnv(String)} follows: the key equal
+     * to the name, case included, and failing that the key first by {@link String#compareTo(String)}
+     * among those equal to it ignoring case.
+     *
+     * @param variables the variables to search
+     * @param variableName the name of the variable, matched exactly first and then ignoring case
+     * @return the value of the matching key, or empty if no key matches the name in any case
+     */
+    static @NotNull Optional<String> findEnv(@NotNull Map<String, String> variables, @NotNull String variableName) {
+        String exact = variables.get(variableName);
+
+        if (exact != null)
+            return Optional.of(exact);
+
+        return variables.entrySet()
             .stream()
             .filter(entry -> entry.getKey().equalsIgnoreCase(variableName))
-            .map(Map.Entry::getValue)
-            .findFirst();
+            .min(Map.Entry.comparingByKey())
+            .map(Map.Entry::getValue);
     }
 
     /**
