@@ -1,6 +1,5 @@
 package dev.simplified.util;
 
-import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -9,10 +8,12 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URISyntaxException;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,9 +21,9 @@ import java.util.Optional;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.anEmptyMap;
-import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 /**
  * Coverage of where {@link SystemUtil} finds the directories and variables it answers, held apart
@@ -38,38 +39,52 @@ class SystemUtilTest {
     }
 
     @Test
-    @DisplayName("the .env file in every directory contributes its variables")
-    void everyDirectoryContributes(@TempDir Path first, @TempDir Path second) throws IOException {
-        writeEnv(first, "FIRST_ONLY=first");
-        writeEnv(second, "SECOND_ONLY=second");
+    @DisplayName("a .env beside the location utils was loaded from is not read, even when the main class was loaded from there too")
+    void libraryLocationIsNotRead(@TempDir Path workingDirectory) throws Exception {
+        Path libraryEnv = Path.of(SystemUtil.class.getProtectionDomain().getCodeSource().getLocation().toURI()).resolveSibling(".env");
+        assumeFalse(Files.exists(libraryEnv), "a .env already sits beside utils' class-path entry");
+        writeEnv(workingDirectory, "SYSTEM_UTIL_TEST_WORKING_DIRECTORY=working");
+        Files.write(libraryEnv, List.of("SYSTEM_UTIL_TEST_LIBRARY_LOCATION=library"));
 
-        Map<String, String> variables = SystemUtil.loadEnvironmentVariables(List.of(first.toFile(), second.toFile()), Map.of());
+        try {
+            Map<String, String> variables = initializeFresh(Map.of(
+                "user.dir", workingDirectory.toString(),
+                "sun.java.command", SystemUtil.class.getName() + " argument"
+            ));
 
-        assertThat(variables, hasEntry("FIRST_ONLY", "first"));
-        assertThat(variables, hasEntry("SECOND_ONLY", "second"));
+            assertThat(variables.get("SYSTEM_UTIL_TEST_WORKING_DIRECTORY"), is("working"));
+            assertThat(variables.get("SYSTEM_UTIL_TEST_LIBRARY_LOCATION"), is(nullValue()));
+        } finally {
+            Files.deleteIfExists(libraryEnv);
+        }
     }
 
     @Test
-    @DisplayName("a later directory's .env replaces an earlier one's, and the environment replaces both")
-    void laterSourcesWin(@TempDir Path first, @TempDir Path second) throws IOException {
-        writeEnv(first, "FILES=first", "ALL=first");
-        writeEnv(second, "FILES=second", "ALL=second");
+    @DisplayName("the .env file in the given directory contributes its variables")
+    void directoryContributes(@TempDir Path directory) throws IOException {
+        writeEnv(directory, "FILE_ONLY=file");
 
-        Map<String, String> variables = SystemUtil.loadEnvironmentVariables(List.of(first.toFile(), second.toFile()), Map.of("ALL", "environment"));
-
-        assertThat(variables, hasEntry("FILES", "second"));
-        assertThat(variables, hasEntry("ALL", "environment"));
+        assertThat(SystemUtil.loadEnvironmentVariables(directory.toFile(), Map.of()), is(Map.of("FILE_ONLY", "file")));
     }
 
     @Test
-    @DisplayName("a directory without a .env file, or one that does not exist, adds nothing")
+    @DisplayName("the environment replaces a .env entry with the same key")
+    void environmentWins(@TempDir Path directory) throws IOException {
+        writeEnv(directory, "FILE_ONLY=file", "BOTH=file");
+
+        Map<String, String> variables = SystemUtil.loadEnvironmentVariables(directory.toFile(), Map.of("BOTH", "environment"));
+
+        assertThat(variables, is(Map.of("FILE_ONLY", "file", "BOTH", "environment")));
+    }
+
+    @Test
+    @DisplayName("a directory without a .env file, one that does not exist, or no directory adds nothing")
     void missingFilesAddNothing(@TempDir Path empty) {
-        Map<String, String> variables = SystemUtil.loadEnvironmentVariables(
-            List.of(empty.toFile(), empty.resolve("absent").toFile()),
-            Map.of("ONLY", "environment")
-        );
+        Map<String, String> environment = Map.of("ONLY", "environment");
 
-        assertThat(variables, is(Map.of("ONLY", "environment")));
+        assertThat(SystemUtil.loadEnvironmentVariables(empty.toFile(), environment), is(environment));
+        assertThat(SystemUtil.loadEnvironmentVariables(empty.resolve("absent").toFile(), environment), is(environment));
+        assertThat(SystemUtil.loadEnvironmentVariables(null, environment), is(environment));
     }
 
     @Test
@@ -85,37 +100,10 @@ class SystemUtilTest {
         });
 
         try {
-            assertThat(SystemUtil.loadEnvironmentVariables(List.of(), Map.of()), is(anEmptyMap()));
+            assertThat(SystemUtil.loadEnvironmentVariables(null, Map.of()), is(anEmptyMap()));
         } finally {
             thread.setContextClassLoader(original);
         }
-    }
-
-    @Test
-    @DisplayName("a jar started with -jar is the entry point, its directory answered even with spaces in the path")
-    void jarLaunchAnswersTheJarsDirectory(@TempDir Path root) throws IOException {
-        Path deployment = Files.createDirectories(root.resolve("deploy dir"));
-        String jar = Files.createFile(deployment.resolve("app.jar")).toString();
-
-        assertThat(SystemUtil.getEntryPointDirectory(jar + " --flag value", jar), is(deployment.toFile()));
-        assertThat(SystemUtil.getEntryPointDirectory(jar, jar), is(deployment.toFile()));
-    }
-
-    @Test
-    @DisplayName("a main class is the entry point, the directory above its code source answered")
-    void classLaunchAnswersTheMainClassDirectory() throws URISyntaxException {
-        File expected = new File(MatcherAssert.class.getProtectionDomain().getCodeSource().getLocation().toURI()).getParentFile();
-
-        assertThat(SystemUtil.getEntryPointDirectory(MatcherAssert.class.getName() + " argument", "unrelated"), is(expected));
-    }
-
-    @Test
-    @DisplayName("no command, an unknown main class or a module launch has no entry point directory")
-    void unresolvableCommandsAnswerNull() {
-        assertThat(SystemUtil.getEntryPointDirectory(null, null), is(nullValue()));
-        assertThat(SystemUtil.getEntryPointDirectory("", "unrelated"), is(nullValue()));
-        assertThat(SystemUtil.getEntryPointDirectory("dev.simplified.util.NoSuchMain argument", "unrelated"), is(nullValue()));
-        assertThat(SystemUtil.getEntryPointDirectory("some.module/some.module.Main", "unrelated"), is(nullValue()));
     }
 
     @Test
@@ -148,7 +136,7 @@ class SystemUtilTest {
     void caseVariantsAcrossSourcesStayApart(@TempDir Path directory) throws IOException {
         writeEnv(directory, "db_url=file");
 
-        Map<String, String> variables = SystemUtil.loadEnvironmentVariables(List.of(directory.toFile()), Map.of("DB_URL", "environment"));
+        Map<String, String> variables = SystemUtil.loadEnvironmentVariables(directory.toFile(), Map.of("DB_URL", "environment"));
 
         assertThat(SystemUtil.findEnv(variables, "db_url"), is(Optional.of("file")));
         assertThat(SystemUtil.findEnv(variables, "DB_URL"), is(Optional.of("environment")));
@@ -173,6 +161,47 @@ class SystemUtilTest {
             reversed.put(keysAndValues[i], keysAndValues[i + 1]);
 
         return List.of(forward, reversed);
+    }
+
+    /**
+     * Initializes a copy of {@link SystemUtil} defined by a class loader of its own, so its static
+     * initializer builds the environment map again while the given system properties are set.
+     *
+     * <p>Every other class resolves through the loader of the {@code SystemUtil} under test, and
+     * the properties are put back once the copy has initialized.
+     *
+     * @param properties the system properties to set while the copy initializes
+     * @return the environment map the copy built
+     * @throws Exception if the copy cannot be defined or its map cannot be read
+     */
+    @SuppressWarnings("unchecked")
+    private static Map<String, String> initializeFresh(Map<String, String> properties) throws Exception {
+        Map<String, String> saved = new HashMap<>();
+        properties.keySet().forEach(key -> saved.put(key, System.getProperty(key)));
+        URL classes = SystemUtil.class.getProtectionDomain().getCodeSource().getLocation();
+
+        try (URLClassLoader loader = new URLClassLoader(new URL[] { classes }, SystemUtil.class.getClassLoader()) {
+            @Override
+            protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
+                if (!name.equals(SystemUtil.class.getName()))
+                    return super.loadClass(name, resolve);
+
+                synchronized (getClassLoadingLock(name)) {
+                    Class<?> loaded = findLoadedClass(name);
+                    return loaded != null ? loaded : findClass(name);
+                }
+            }
+        }) {
+            properties.forEach(System::setProperty);
+            return (Map<String, String>) Class.forName(SystemUtil.class.getName(), true, loader).getMethod("getEnv").invoke(null);
+        } finally {
+            saved.forEach((key, value) -> {
+                if (value == null)
+                    System.clearProperty(key);
+                else
+                    System.setProperty(key, value);
+            });
+        }
     }
 
     /**
