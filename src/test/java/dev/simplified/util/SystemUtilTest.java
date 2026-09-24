@@ -13,8 +13,10 @@ import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.anEmptyMap;
@@ -114,6 +116,63 @@ class SystemUtilTest {
         assertThat(SystemUtil.getEntryPointDirectory("", "unrelated"), is(nullValue()));
         assertThat(SystemUtil.getEntryPointDirectory("dev.simplified.util.NoSuchMain argument", "unrelated"), is(nullValue()));
         assertThat(SystemUtil.getEntryPointDirectory("some.module/some.module.Main", "unrelated"), is(nullValue()));
+    }
+
+    @Test
+    @DisplayName("a name spelled exactly as a key answers that key, whatever order the map iterates in")
+    void exactCaseWins() {
+        for (Map<String, String> variables : inBothOrders("db_url", "lower", "DB_URL", "upper")) {
+            assertThat(SystemUtil.findEnv(variables, "DB_URL"), is(Optional.of("upper")));
+            assertThat(SystemUtil.findEnv(variables, "db_url"), is(Optional.of("lower")));
+        }
+    }
+
+    @Test
+    @DisplayName("a name matching keys only ignoring case answers the key first by String.compareTo, whatever order the map iterates in")
+    void caseInsensitiveFallbackIsFixed() {
+        for (Map<String, String> variables : inBothOrders("db_url", "lower", "DB_URL", "upper"))
+            assertThat(SystemUtil.findEnv(variables, "Db_Url"), is(Optional.of("upper")));
+
+        for (Map<String, String> variables : inBothOrders("db_url", "lower", "dB_URL", "mixed", "Db_url", "capital"))
+            assertThat(SystemUtil.findEnv(variables, "DB_URL"), is(Optional.of("capital")));
+    }
+
+    @Test
+    @DisplayName("a name no key matches, in any case, answers empty")
+    void unmatchedNameIsEmpty() {
+        assertThat(SystemUtil.findEnv(Map.of("DB_URL", "upper"), "DB_HOST"), is(Optional.empty()));
+    }
+
+    @Test
+    @DisplayName("a .env key differing only in case from an environment variable is kept, and each spelling finds its own value")
+    void caseVariantsAcrossSourcesStayApart(@TempDir Path directory) throws IOException {
+        writeEnv(directory, "db_url=file");
+
+        Map<String, String> variables = SystemUtil.loadEnvironmentVariables(List.of(directory.toFile()), Map.of("DB_URL", "environment"));
+
+        assertThat(SystemUtil.findEnv(variables, "db_url"), is(Optional.of("file")));
+        assertThat(SystemUtil.findEnv(variables, "DB_URL"), is(Optional.of("environment")));
+        assertThat(SystemUtil.findEnv(variables, "Db_Url"), is(Optional.of("environment")));
+    }
+
+    /**
+     * Builds the same variables twice, once inserted in the given order and once in reverse, so a
+     * lookup that leaned on iteration order answers differently for one of them.
+     *
+     * @param keysAndValues alternating keys and values
+     * @return the forward and the reversed map
+     */
+    private static List<Map<String, String>> inBothOrders(String... keysAndValues) {
+        Map<String, String> forward = new LinkedHashMap<>();
+        Map<String, String> reversed = new LinkedHashMap<>();
+
+        for (int i = 0; i < keysAndValues.length; i += 2)
+            forward.put(keysAndValues[i], keysAndValues[i + 1]);
+
+        for (int i = keysAndValues.length - 2; i >= 0; i -= 2)
+            reversed.put(keysAndValues[i], keysAndValues[i + 1]);
+
+        return List.of(forward, reversed);
     }
 
     /**

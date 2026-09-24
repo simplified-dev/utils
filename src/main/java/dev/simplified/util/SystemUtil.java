@@ -441,25 +441,43 @@ public final class SystemUtil {
     }
 
     /**
-     * Looks up an environment variable in the map {@code getEnv()} answers, matching the name
-     * case-insensitively.
+     * Looks up an environment variable in the map {@code getEnv()} answers, preferring the name as
+     * spelled and falling back to a match that ignores case.
      *
-     * <p>Keys are compared with {@link String#equalsIgnoreCase(String)} in the map's iteration
-     * order and the first match answers, with no preference for an exact-case match. That order is
-     * a hash map's, so when two keys differ only in case - a {@code .env} entry {@code db_url} beside
-     * the OS variable {@code DB_URL}, for instance - which of their values is returned is
-     * unspecified.
+     * <p>A key equal to the name, case included, always answers. Failing that, of the keys equal to
+     * it under {@link String#equalsIgnoreCase(String)}, the one first by
+     * {@link String#compareTo(String)} answers - for an ASCII name, the spelling with the upper-case
+     * letter where the spellings first differ. So beside a {@code .env} entry {@code db_url} and the
+     * OS variable {@code DB_URL}, {@code getEnv("db_url")} answers the entry's value and both
+     * {@code getEnv("DB_URL")} and {@code getEnv("Db_Url")} answer the variable's.
      *
-     * @param variableName the name of the variable, matched ignoring case
-     * @return the value of the first key matching the name, or empty if none matches
+     * @param variableName the name of the variable, matched exactly first and then ignoring case
+     * @return the value of the matching key, or empty if no key matches the name in any case
      */
     public static @NotNull Optional<String> getEnv(@NotNull String variableName) {
-        return getEnv()
-            .entrySet()
+        return findEnv(getEnv(), variableName);
+    }
+
+    /**
+     * Looks up a variable in the given map by the rule {@link #getEnv(String)} follows: the key equal
+     * to the name, case included, and failing that the key first by {@link String#compareTo(String)}
+     * among those equal to it ignoring case.
+     *
+     * @param variables the variables to search
+     * @param variableName the name of the variable, matched exactly first and then ignoring case
+     * @return the value of the matching key, or empty if no key matches the name in any case
+     */
+    static @NotNull Optional<String> findEnv(@NotNull Map<String, String> variables, @NotNull String variableName) {
+        String exact = variables.get(variableName);
+
+        if (exact != null)
+            return Optional.of(exact);
+
+        return variables.entrySet()
             .stream()
             .filter(entry -> entry.getKey().equalsIgnoreCase(variableName))
-            .map(Map.Entry::getValue)
-            .findFirst();
+            .min(Map.Entry.comparingByKey())
+            .map(Map.Entry::getValue);
     }
 
     /**
