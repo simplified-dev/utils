@@ -2,10 +2,13 @@ package dev.simplified.util;
 
 import dev.simplified.annotations.EqualsAndHashCode;
 import dev.simplified.annotations.Getter;
+import dev.simplified.annotations.XContract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.UnknownNullability;
 
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -114,6 +117,7 @@ public final class Possible<T> {
      * @return an empty {@code Possible}
      */
     @SuppressWarnings("unchecked")
+    @XContract(value = "() -> !null", pure = true)
     public static <T> @NotNull Possible<T> empty() {
         return (Possible<T>) EMPTY;
     }
@@ -131,6 +135,7 @@ public final class Possible<T> {
      * @return an absent {@code Possible}
      */
     @SuppressWarnings("unchecked")
+    @XContract(value = "() -> !null", pure = true)
     public static <T> @NotNull Possible<T> absent() {
         return (Possible<T>) ABSENT;
     }
@@ -143,6 +148,7 @@ public final class Possible<T> {
      * @return a {@code Possible} with the value present
      * @throws NullPointerException if {@code value} is {@code null}
      */
+    @XContract(value = "(param1 == null) -> throws NullPointerException; () -> !null", pure = true)
     public static <T> @NotNull Possible<T> of(@NotNull T value) {
         if (value == null)
             throw new NullPointerException("A present Possible carries a value");
@@ -164,6 +170,7 @@ public final class Possible<T> {
      * @return a {@code Possible} with the value present if it is non-{@code null}, otherwise an empty
      *         {@code Possible}
      */
+    @XContract(value = "() -> !null", pure = true)
     public static <T> @NotNull Possible<T> ofNullable(@Nullable T value) {
         return value == null ? empty() : new Possible<>(State.PRESENT, value);
     }
@@ -182,7 +189,9 @@ public final class Possible<T> {
      * @param <T> the type of the value
      * @return a {@code Possible} with the value present if the {@code Optional} contains one,
      *         otherwise an empty {@code Possible}
+     * @throws NullPointerException if {@code value} is {@code null}
      */
+    @XContract(value = "(param1 == null) -> throws NullPointerException; () -> !null", pure = true)
     public static <T> @NotNull Possible<T> ofOptional(@NotNull Optional<? extends T> value) {
         return value.<Possible<T>>map(Possible::of).orElseGet(Possible::empty);
     }
@@ -195,6 +204,7 @@ public final class Possible<T> {
      * @return the non-{@code null} value described by this {@code Possible}
      * @throws NoSuchElementException if no value is present
      */
+    @XContract(value = "() -> !null", pure = true)
     public @NotNull T get() {
         if (this.value == null)
             throw new NoSuchElementException(this.state == State.ABSENT ? "Value absent" : "No value present");
@@ -209,6 +219,7 @@ public final class Possible<T> {
      *
      * @return {@code true} if a value is present, otherwise {@code false}
      */
+    @XContract(pure = true)
     public boolean isPresent() {
         return this.state == State.PRESENT;
     }
@@ -220,6 +231,7 @@ public final class Possible<T> {
      *
      * @return {@code true} if no value is present, otherwise {@code false}
      */
+    @XContract(pure = true)
     public boolean isEmpty() {
         return this.state != State.PRESENT;
     }
@@ -233,6 +245,7 @@ public final class Possible<T> {
      *
      * @return {@code true} if this is absent, otherwise {@code false}
      */
+    @XContract(pure = true)
     public boolean isAbsent() {
         return this.state == State.ABSENT;
     }
@@ -243,8 +256,9 @@ public final class Possible<T> {
      * If a value is present, performs the given action with the value, otherwise does nothing.
      *
      * @param action the action to be performed if a value is present
+     * @throws NullPointerException if a value is present and {@code action} is {@code null}
      */
-    public void ifPresent(@NotNull Consumer<? super T> action) {
+    public void ifPresent(@NotNull Consumer<? super @NotNull T> action) {
         if (this.value != null)
             action.accept(this.value);
     }
@@ -255,8 +269,10 @@ public final class Possible<T> {
      *
      * @param action the action to be performed if a value is present
      * @param emptyAction the action to be performed if no value is present, absent included
+     * @throws NullPointerException if a value is present and {@code action} is {@code null}, or no value
+     *         is present and {@code emptyAction} is {@code null}
      */
-    public void ifPresentOrElse(@NotNull Consumer<? super T> action, @NotNull Runnable emptyAction) {
+    public void ifPresentOrElse(@NotNull Consumer<? super @NotNull T> action, @NotNull Runnable emptyAction) {
         if (this.value != null)
             action.accept(this.value);
         else
@@ -276,8 +292,11 @@ public final class Possible<T> {
      *
      * @param predicate the predicate to apply to the value, if present
      * @return this {@code Possible} if a value is present and matches, otherwise empty
+     * @throws NullPointerException if {@code predicate} is {@code null}
      */
-    public @NotNull Possible<T> filter(@NotNull Predicate<? super T> predicate) {
+    @XContract("(param1 == null) -> throws NullPointerException; () -> !null")
+    public @NotNull Possible<T> filter(@NotNull Predicate<? super @NotNull T> predicate) {
+        Objects.requireNonNull(predicate, "The predicate is null");
         if (this.value == null) return this;
         return predicate.test(this.value) ? this : empty();
     }
@@ -296,9 +315,12 @@ public final class Possible<T> {
      * @param mapper the mapping function to apply to the value, if present
      * @param <U> the type of the value returned from the mapping function
      * @return a {@code Possible} describing the mapped result, or this one's value-less state
+     * @throws NullPointerException if {@code mapper} is {@code null}
      */
     @SuppressWarnings("unchecked")
-    public <U> @NotNull Possible<U> map(@NotNull Function<? super T, ? extends U> mapper) {
+    @XContract("(param1 == null) -> throws NullPointerException; () -> !null")
+    public <U> @NotNull Possible<U> map(@NotNull Function<? super @NotNull T, ? extends U> mapper) {
+        Objects.requireNonNull(mapper, "The mapping function is null");
         if (this.value == null) return (Possible<U>) this;
         return ofNullable(mapper.apply(this.value));
     }
@@ -316,11 +338,15 @@ public final class Possible<T> {
      * @param mapper the mapping function to apply to the value, if present
      * @param <U> the type of the value of the {@code Possible} returned by the mapping function
      * @return the result of applying the mapping function, or this one's value-less state
+     * @throws NullPointerException if {@code mapper} is {@code null}, or a value is present and it
+     *         returns {@code null}
      */
     @SuppressWarnings("unchecked")
-    public <U> @NotNull Possible<U> flatMap(@NotNull Function<? super T, ? extends Possible<? extends U>> mapper) {
+    @XContract("(param1 == null) -> throws NullPointerException; () -> !null")
+    public <U> @NotNull Possible<U> flatMap(@NotNull Function<? super @NotNull T, ? extends @NotNull Possible<? extends U>> mapper) {
+        Objects.requireNonNull(mapper, "The mapping function is null");
         if (this.value == null) return (Possible<U>) this;
-        return (Possible<U>) mapper.apply(this.value);
+        return Objects.requireNonNull((Possible<U>) mapper.apply(this.value), "The mapping function returned null");
     }
 
     // Or
@@ -331,10 +357,15 @@ public final class Possible<T> {
      *
      * @param supplier a function that produces a fallback {@code Possible}
      * @return this {@code Possible} if a value is present, otherwise the result of {@code supplier}
+     * @throws NullPointerException if {@code supplier} is {@code null}, or no value is present and it
+     *         produces {@code null}
      */
     @SuppressWarnings("unchecked")
-    public @NotNull Possible<T> or(@NotNull Supplier<? extends Possible<? extends T>> supplier) {
-        return this.isPresent() ? this : (Possible<T>) supplier.get();
+    @XContract("(param1 == null) -> throws NullPointerException; () -> !null")
+    public @NotNull Possible<T> or(@NotNull Supplier<? extends @NotNull Possible<? extends T>> supplier) {
+        Objects.requireNonNull(supplier, "The supplying function is null");
+        if (this.isPresent()) return this;
+        return Objects.requireNonNull((Possible<T>) supplier.get(), "The supplying function returned null");
     }
 
     /**
@@ -348,10 +379,15 @@ public final class Possible<T> {
      *
      * @param supplier a function that produces a fallback {@code Possible} for the absent state
      * @return the result of {@code supplier} if this is absent, otherwise this {@code Possible}
+     * @throws NullPointerException if {@code supplier} is {@code null}, or this is absent and it
+     *         produces {@code null}
      */
     @SuppressWarnings("unchecked")
-    public @NotNull Possible<T> orAbsent(@NotNull Supplier<? extends Possible<? extends T>> supplier) {
-        return this.state == State.ABSENT ? (Possible<T>) supplier.get() : this;
+    @XContract("(param1 == null) -> throws NullPointerException; () -> !null")
+    public @NotNull Possible<T> orAbsent(@NotNull Supplier<? extends @NotNull Possible<? extends T>> supplier) {
+        Objects.requireNonNull(supplier, "The supplying function is null");
+        if (this.state != State.ABSENT) return this;
+        return Objects.requireNonNull((Possible<T>) supplier.get(), "The supplying function returned null");
     }
 
     // OrElse
@@ -362,7 +398,8 @@ public final class Possible<T> {
      * @param other the value to be returned if no value is present, may be {@code null}
      * @return the value if present, otherwise {@code other}
      */
-    public @Nullable T orElse(@Nullable T other) {
+    @XContract(value = "(param1 != null) -> !null", pure = true)
+    public @UnknownNullability T orElse(@Nullable T other) {
         return this.value != null ? this.value : other;
     }
 
@@ -371,9 +408,10 @@ public final class Possible<T> {
      * supplying function.
      *
      * @param supplier the supplying function that produces a fallback value
-     * @return the value if present, otherwise the result of {@code supplier}
+     * @return the value if present, otherwise the result of {@code supplier}, which may be {@code null}
+     * @throws NullPointerException if no value is present and {@code supplier} is {@code null}
      */
-    public @Nullable T orElseGet(@NotNull Supplier<? extends T> supplier) {
+    public @UnknownNullability T orElseGet(@NotNull Supplier<? extends @Nullable T> supplier) {
         return this.value != null ? this.value : supplier.get();
     }
 
@@ -383,6 +421,7 @@ public final class Possible<T> {
      * @return the non-{@code null} value described by this {@code Possible}
      * @throws NoSuchElementException if no value is present
      */
+    @XContract(value = "() -> !null", pure = true)
     public @NotNull T orElseThrow() {
         return this.get();
     }
@@ -399,8 +438,11 @@ public final class Possible<T> {
      * @param exceptionSupplier the supplying function that produces an exception to be thrown
      * @return the value, if present
      * @throws X if no value is present
+     * @throws NullPointerException if no value is present and {@code exceptionSupplier} is {@code null}
+     *         or produces {@code null}
      */
-    public <X extends Throwable> @NotNull T orElseThrow(@NotNull Supplier<? extends X> exceptionSupplier) throws X {
+    @XContract("() -> !null")
+    public <X extends Throwable> @NotNull T orElseThrow(@NotNull Supplier<? extends @NotNull X> exceptionSupplier) throws X {
         if (this.value == null)
             throw exceptionSupplier.get();
 
@@ -420,6 +462,7 @@ public final class Possible<T> {
      *
      * @return an {@link Optional} describing the value, or empty if no value is present
      */
+    @XContract(value = "() -> !null", pure = true)
     public @NotNull Optional<T> toOptional() {
         return Optional.ofNullable(this.value);
     }
@@ -430,6 +473,7 @@ public final class Possible<T> {
      *
      * @return a {@code Stream} containing the value if present, otherwise empty
      */
+    @XContract(value = "() -> !null", pure = true)
     public @NotNull Stream<T> stream() {
         return this.value != null ? Stream.of(this.value) : Stream.empty();
     }
@@ -442,6 +486,7 @@ public final class Possible<T> {
      * @return a non-empty string representation of this instance
      */
     @Override
+    @XContract("() -> !null")
     public @NotNull String toString() {
         return switch (this.state) {
             case PRESENT -> String.format("Possible[%s]", this.value);
