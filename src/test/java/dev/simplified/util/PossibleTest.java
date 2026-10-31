@@ -99,6 +99,52 @@ class PossibleTest {
     }
 
     @Test
+    @DisplayName("a null function, and a function that answers null where a Possible or an exception is due, fails or completes as Optional's does, in all three states")
+    @SuppressWarnings({ "DataFlowIssue", "XContractCallInspection" })
+    void nullFunctionsAnswerAsOptionalsDo() {
+        for (Possible<String> possible : EVERY_STATE) {
+            Optional<String> optional = possible.toOptional();
+            String state = possible.toString();
+
+            assertThat(state + " filter(null)", outcome(() -> possible.filter(null)), is(outcome(() -> optional.filter(null))));
+            assertThat(state + " map(null)", outcome(() -> possible.map(null)), is(outcome(() -> optional.map(null))));
+            assertThat(state + " flatMap(null)", outcome(() -> possible.flatMap(null)), is(outcome(() -> optional.flatMap(null))));
+            assertThat(state + " flatMap to null", outcome(() -> possible.flatMap(value -> null)), is(outcome(() -> optional.flatMap(value -> null))));
+            assertThat(state + " or(null)", outcome(() -> possible.or(null)), is(outcome(() -> optional.or(null))));
+            assertThat(state + " or to null", outcome(() -> possible.or(() -> null)), is(outcome(() -> optional.or(() -> null))));
+            assertThat(state + " ifPresent(null)", outcome(() -> {
+                possible.ifPresent(null);
+                return state;
+            }), is(outcome(() -> {
+                optional.ifPresent(null);
+                return state;
+            })));
+            assertThat(state + " ifPresentOrElse(null, action)", outcome(() -> {
+                possible.ifPresentOrElse(null, () -> { });
+                return state;
+            }), is(outcome(() -> {
+                optional.ifPresentOrElse(null, () -> { });
+                return state;
+            })));
+            assertThat(state + " ifPresentOrElse(action, null)", outcome(() -> {
+                possible.ifPresentOrElse(value -> { }, null);
+                return state;
+            }), is(outcome(() -> {
+                optional.ifPresentOrElse(value -> { }, null);
+                return state;
+            })));
+            assertThat(state + " orElseGet(null)", outcome(() -> possible.orElseGet(null)), is(outcome(() -> optional.orElseGet(null))));
+            assertThat(state + " orElseThrow(null)", outcome(() -> possible.orElseThrow((Supplier<RuntimeException>) null)), is(outcome(() -> optional.orElseThrow((Supplier<RuntimeException>) null))));
+            assertThat(state + " orElseThrow to null", outcome(() -> possible.orElseThrow((Supplier<RuntimeException>) () -> null)), is(outcome(() -> optional.orElseThrow((Supplier<RuntimeException>) () -> null))));
+            assertThrows(NullPointerException.class, () -> possible.orAbsent(null), state + " orAbsent(null)");
+        }
+
+        // Optional has no orAbsent; it fails as its sibling or does - on a null supplier in every state,
+        // and on a null it produces where it is called.
+        assertThrows(NullPointerException.class, () -> Possible.absent().orAbsent(() -> null), "absent orAbsent to null");
+    }
+
+    @Test
     @DisplayName("empty and absent are not equal, and hash apart")
     void theTwoStatesAreDistinct() {
         assertThat(Possible.empty(), is(not(Possible.absent())));
