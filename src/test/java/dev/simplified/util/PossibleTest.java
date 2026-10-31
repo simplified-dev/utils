@@ -153,6 +153,21 @@ class PossibleTest {
     }
 
     @Test
+    @DisplayName("hashCode answers Optional's for a present and an empty Possible and 1 for an absent one, the same in every run, and equals refuses null and other types")
+    @SuppressWarnings({ "EqualsBetweenInconvertibleTypes", "ConstantValue" })
+    void hashCodeFollowsOptional() {
+        // Fixed values rather than a comparison of two calls: a state hashed by its enum constant's
+        // identity agrees with itself within a run and moves between runs.
+        assertThat(Possible.of("x").hashCode(), is(Optional.of("x").hashCode()));
+        assertThat(Possible.empty().hashCode(), is(0));
+        assertThat(Possible.absent().hashCode(), is(1));
+
+        assertThat(Possible.empty().equals(null), is(false));
+        assertThat(Possible.of("x").equals(Optional.of("x")), is(false));
+        assertThat(Possible.of("x").equals("x"), is(false));
+    }
+
+    @Test
     @DisplayName("each state is equal to itself")
     void eachStateIsReflexive() {
         assertThat(Possible.empty(), is(Possible.empty()));

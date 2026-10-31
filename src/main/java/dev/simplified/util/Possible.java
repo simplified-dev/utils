@@ -1,6 +1,5 @@
 package dev.simplified.util;
 
-import dev.simplified.annotations.EqualsAndHashCode;
 import dev.simplified.annotations.Getter;
 import dev.simplified.annotations.XContract;
 import org.jetbrains.annotations.NotNull;
@@ -50,13 +49,13 @@ import java.util.stream.Stream;
  * instance.
  *
  * @apiNote
- * {@link #equals(Object)} is the one shared method that does not follow {@link Optional}: an empty and
- * an absent {@code Possible} are unequal, although both convert to {@link Optional#empty()}. Telling
- * them apart is what the type is for.
+ * {@link #equals(Object)} and {@link #hashCode()} are the shared methods that do not follow
+ * {@link Optional} for an absent {@code Possible}: an empty and an absent one are unequal and hash
+ * apart, although both convert to {@link Optional#empty()}. Telling them apart is what the type is
+ * for. A present and an empty one answer both as {@link Optional} would.
  *
  * @param <T> the type of value
  */
-@EqualsAndHashCode
 public final class Possible<T> {
 
     /**
@@ -479,6 +478,34 @@ public final class Possible<T> {
     }
 
     // Object
+
+    /**
+     * Indicates whether another object is a {@code Possible} in the same state holding an equal value,
+     * as {@link Optional#equals(Object)} does for a present or an empty one. An empty and an absent
+     * {@code Possible} are unequal.
+     *
+     * @param obj the object to compare with
+     * @return {@code true} if {@code obj} is a {@code Possible} in the same state with an equal value
+     */
+    @Override
+    @XContract(value = "(param1 == null) -> false", pure = true)
+    public boolean equals(@Nullable Object obj) {
+        if (this == obj) return true;
+        return obj instanceof Possible<?> other && this.state == other.state && Objects.equals(this.value, other.value);
+    }
+
+    /**
+     * Returns the hash code of the value, as {@link Optional#hashCode()} does - {@code 0} for an empty
+     * {@code Possible} - and {@code 1} for an absent one, so the two value-less states hash apart. The
+     * answer is the same in every run, as an enum constant's own identity hash would not be.
+     *
+     * @return the hash code
+     */
+    @Override
+    @XContract(pure = true)
+    public int hashCode() {
+        return this.state == State.ABSENT ? 1 : Objects.hashCode(this.value);
+    }
 
     /**
      * Returns a string representation of this {@code Possible} suitable for debugging.
